@@ -159,7 +159,7 @@ function findOrMakeVertoRoom() {
     for (var i = 0; i < Object.keys(allRooms).length; ++i) {
         var r = allRooms[i];
         var membs = r.getJoinedMembers();
-        if (membs.length == 2 && membs[0].userId == VERTO_USERID || membs[0].userId == VERTO_USERID) {
+        if (membs.length == 2 && (membs[0].userId == VERTO_USERID || membs[0].userId == VERTO_USERID)) {
             defer.resolve(r);
             return defer.promise;
         }
