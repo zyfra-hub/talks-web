@@ -59,6 +59,7 @@ var ComponentBroker = require('./ComponentBroker');
 var ErrorDialog = ComponentBroker.get("organisms/ErrorDialog");
 var Matrix = require("matrix-js-sdk");
 var dis = require("./dispatcher");
+var q = require("q");
 
 var calls = {
     //room_id: MatrixCall
@@ -150,6 +151,29 @@ function _setCallState(call, roomId, status) {
     });
 }
 
+function findOrMakeVertoRoom() {
+    var VERTO_USERID = '@verto_1234:matrix.org';
+    var defer = q.defer();
+
+    var allRooms = MatrixClientPeg.get().getRooms();
+    for (var i = 0; i < Object.keys(allRooms).length; ++i) {
+        var r = allRooms[i];
+        var membs = r.getJoinedMembers();
+        if (membs.length == 2 && membs[0].userId == VERTO_USERID || membs[0].userId == VERTO_USERID) {
+            defer.resolve(r);
+            return defer.promise;
+        }
+    }
+
+    MatrixClientPeg.get().createRoom({
+        invite: [ VERTO_USERID ]
+    }).done(function(result) {
+        defer.resolve(MatrixClientPeg.get().getRoom(result.room_id));
+    });
+
+    return defer.promise;
+}
+
 dis.register(function(payload) {
     switch (payload.action) {
         case 'place_call':
@@ -162,7 +186,29 @@ dis.register(function(payload) {
                 return;
             }
             var members = room.getJoinedMembers();
-            if (members.length !== 2) {
+            if (members.length > 2) {
+                var vertoRoom = findOrMakeVertoRoom().done(function(r) {
+                    console.log("Place %s conference call in %s", payload.type, payload.room_id);
+                    var call = Matrix.createNewMatrixCall(
+                        MatrixClientPeg.get(), r.roomId
+                    );
+                    _setCallListeners(call);
+                    _setCallState(call, call.roomId, "ringback");
+                    if (payload.type === 'voice') {
+                        call.placeVoiceCall();
+                    }
+                    else if (payload.type === 'video') {
+                        call.placeVideoCall(
+                            payload.remote_element,
+                            payload.local_element
+                        );
+                    }
+                    else {
+                        console.error("Unknown call type: %s", payload.type);
+                    }
+                });
+                return;
+            } else if (members.length !== 2) {
                 var text = members.length === 1 ? "yourself." : "more than 2 people.";
                 Modal.createDialog(ErrorDialog, {
                     description: "You cannot place a call with " + text
