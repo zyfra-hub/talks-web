@@ -41,6 +41,7 @@ var tileTypes = {
     'm.call.answer' : ComponentBroker.get('molecules/EventAsTextTile'),
     'm.call.hangup' : ComponentBroker.get('molecules/EventAsTextTile'),
     'm.room.topic'  : ComponentBroker.get('molecules/EventAsTextTile'),
+    'org.matrix.demo.health'  : ComponentBroker.get('molecules/HealthDemoTile'),
 };
 
 var DateSeparator = ComponentBroker.get('molecules/DateSeparator');

@@ -109,6 +109,7 @@ require('../skins/base/views/molecules/voip/VideoView');
 require('../skins/base/views/molecules/voip/CallView');
 require('../skins/base/views/molecules/voip/IncomingCallBox');
 require('../skins/base/views/molecules/EventAsTextTile');
+require('../skins/base/views/molecules/HealthDemoTile');
 require('../skins/base/views/molecules/MemberInfo');
 require('../skins/base/views/organisms/ErrorDialog');
 require('../skins/base/views/organisms/QuestionDialog');
