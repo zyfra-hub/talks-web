@@ -59,6 +59,14 @@
     "parallelshell": "^1.2.0",
     "rimraf": "^2.4.3",
     "source-map-loader": "^0.1.5",
-    "webpack": "^1.12.13"
+    "webpack": "^1.12.13",
+    "karma": ">=0.0.0",
+    "karma-cli": ">=0.0.0",
+    "karma-mocha": ">=0.0.0",
+    "karma-webpack": ">=0.0.0",
+    "karma-sourcemap-loader": ">=0.0.0",
+    "karma-chrome-launcher": ">=0.0.0",
+    "mocha": ">=0.0.0",
+    "expect": ">=0.0.0"
   }
 }
