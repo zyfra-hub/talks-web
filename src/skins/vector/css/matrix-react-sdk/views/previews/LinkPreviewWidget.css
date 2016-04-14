@@ -18,38 +18,8 @@ limitations under the License.
     margin-top: 15px;
     margin-right: 15px;
     margin-bottom: 15px;
-    display: -webkit-flex;
-    display: flex;
     border-left: 4px solid #ddd;
     color: #888;
-}
-
-.mx_LinkPreviewWidget_image {
-    -webkit-flex: 0 0 100px;
-    flex: 0 0 100px;
-    margin-left: 15px;
-    text-align: center;
-    cursor: pointer;
-}
-
-.mx_LinkPreviewWidget_caption {
-    margin-left: 15px;
-    -webkit-flex: 1;
-    flex: 1;
-}
-
-.mx_LinkPreviewWidget_title {
-    display: inline;
-    font-weight: bold;
-}
-
-.mx_LinkPreviewWidget_siteName {
-    display: inline;
-}
-
-.mx_LinkPreviewWidget_description {
-    margin-top: 8px;
-    white-space: normal;
 }
 
 .mx_LinkPreviewWidget_cancel {

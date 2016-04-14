@@ -1,0 +1,49 @@
+/*
+Copyright 2015, 2016 OpenMarket Ltd
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+.mx_OpenGraphPreview {
+    display: -webkit-flex;
+    display: flex;
+}
+
+.mx_OpenGraphPreview_image {
+    -webkit-flex: 0 0 100px;
+    flex: 0 0 100px;
+    margin-left: 15px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.mx_OpenGraphPreview_caption {
+    margin-left: 15px;
+    -webkit-flex: 1;
+    flex: 1;
+}
+
+.mx_OpenGraphPreview_title {
+    display: inline;
+    font-weight: bold;
+}
+
+.mx_OpenGraphPreview_siteName {
+    display: inline;
+}
+
+.mx_OpenGraphPreview_description {
+    margin-top: 8px;
+    white-space: normal;
+}
+
