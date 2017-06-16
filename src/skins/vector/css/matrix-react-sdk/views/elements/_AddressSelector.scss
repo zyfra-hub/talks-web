@@ -14,20 +14,62 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-.mx_AddressSelector {
+
+.mx_AddressSelector_container {
     position: absolute;
+    border-radius: 3px;
+    border: solid 1px $accent-color;
+    background-color: $primary-bg-color;
+}
+
+.mx_AddressSelector_container.mx_AddressSelector_empty {
+    display: none;
+}
+
+.mx_AddressSelector {
     background-color: $primary-bg-color;
     width: 485px;
     max-height: 116px;
     overflow-y: auto;
-	border-radius: 3px;
-	background-color: $primary-bg-color;
-	border: solid 1px $accent-color;
     cursor: pointer;
 }
 
-.mx_AddressSelector.mx_AddressSelector_empty {
-    display: none;
+.mx_AddressSelector_filter_dropdown {
+    border-top: 1px solid $primary-hairline-color;
+    cursor: pointer;
+
+    /* So that the _chevron is positioned relative to this */
+    position: relative;
+}
+
+.mx_AddressSelector_filter_dropdown_header {
+    padding: 5px;
+}
+
+.mx_AddressSelector_filter_dropdown_expanded {
+    overflow-y: auto;
+    max-height: 50px;
+}
+
+.mx_AddressSelector_filter_dropdown_tile {
+    padding: 3px;
+    border-bottom: 1px solid $primary-hairline-color;
+}
+
+.mx_AddressSelector_filter_dropdown_tile input[type=checkbox] {
+    float: right;
+}
+
+.mx_AddressSelector_filter_dropdown_chevron {
+    border-color: #454545 transparent transparent;
+    border-style: solid;
+    border-width: 5px 5px 0;
+    display: block;
+    height: 0;
+    position: absolute;
+    right: 10px;
+    top: 14px;
+    width: 0;
 }
 
 .mx_AddressSelector_addressListElement .mx_AddressTile {
