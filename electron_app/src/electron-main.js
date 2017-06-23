@@ -28,6 +28,7 @@ const AutoLaunch = require('auto-launch');
 
 const tray = require('./tray');
 const vectorMenu = require('./vectormenu');
+const trustCertificate = require('./trust-certificate');
 const webContentsHandler = require('./webcontents-handler');
 
 const windowStateKeeper = require('electron-window-state');
@@ -290,6 +291,7 @@ electron.app.on('ready', () => {
     });
 
     webContentsHandler(mainWindow.webContents);
+    trustCertificate.register(mainWindow);
     mainWindowState.manage(mainWindow);
 });
 
