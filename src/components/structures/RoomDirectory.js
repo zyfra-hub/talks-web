@@ -70,6 +70,7 @@ module.exports = React.createClass({
 
         this.setState({protocolsLoading: true});
         MatrixClientPeg.get().getThirdpartyProtocols().done((response) => {
+            console.log('got 3p networks: '+response);
             this.protocols = response;
             this.setState({protocolsLoading: false});
         }, (err) => {
@@ -497,6 +498,9 @@ module.exports = React.createClass({
                 </div>
             );
         }
+
+        console.log('renderiong with 3p networks: '+ this.protocols);
+
 
         let content;
         if (this.state.loading) {
