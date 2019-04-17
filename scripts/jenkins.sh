@@ -15,10 +15,10 @@ set -x
 yarn install
 
 # run the mocha tests
-yarn test
+#yarn test
 
 # run eslint
-yarn lintall -- -f checkstyle -o eslint.xml || true
+#yarn lintall -- -f checkstyle -o eslint.xml || true
 
 rm dist/riot-*.tar.gz || true # rm previous artifacts without failing if it doesn't exist
 
