@@ -1,24 +1,12 @@
 #!/bin/bash
 
-set -e
-
-#export NVM_DIR="$HOME/.nvm"
-#[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-#nvm use 10
-
-set -x
+set -ex
 
 # check out corresponding branches of dependencies.
 # clone the deps with depth 1: we know we will only ever need that one commit.
 `dirname $0`/fetch-develop.deps.sh --depth 1
 
 yarn install
-
-# run the mocha tests
-#yarn test
-
-# run eslint
-#yarn lintall -- -f checkstyle -o eslint.xml || true
 
 rm dist/riot-*.tar.gz || true # rm previous artifacts without failing if it doesn't exist
 
