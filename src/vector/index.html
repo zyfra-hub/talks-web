@@ -39,6 +39,7 @@
     <noscript>Sorry, Riot requires JavaScript to be enabled.</noscript> <!-- TODO: Translate this? -->
     <script>
         window.vector_indexeddb_worker_script = '<%= htmlWebpackPlugin.files.chunks['indexeddb-worker'].entry %>';
+        window.vector_dendrite_worker_script = '<%= htmlWebpackPlugin.files.chunks['dendrite-sw'].entry %>';
     </script>
     <script src="<%= htmlWebpackPlugin.files.chunks['bundle'].entry %>"></script>
     <script>
