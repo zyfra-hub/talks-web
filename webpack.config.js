@@ -21,6 +21,12 @@ module.exports = (env, argv) => {
         development['devtool'] = 'eval-source-map';
     }
 
+    // Resolve the directories for the react-sdk and js-sdk for later use. We resolve these early so we
+    // don't have to call them over and over. We also resolve to the package.json instead of the src
+    // directory so we don't have to rely on a index.js or similar file existing.
+    const reactSdkSrcDir = path.resolve(require.resolve("matrix-react-sdk/package.json"), '..', 'src');
+    const jsSdkSrcDir = path.resolve(require.resolve("matrix-js-sdk/package.json"), '..', 'src');
+
     return {
         ...development,
 
@@ -114,7 +120,23 @@ module.exports = (env, argv) => {
             rules: [
                 {
                     test: /\.(ts|js)x?$/,
-                    exclude: /node_modules/,
+                    include: (f) => {
+                        // our own source needs babel-ing
+                        if (f.startsWith(path.resolve(__dirname, 'src'))) return true;
+
+                        // we use the original source files of react-sdk and js-sdk, so we need to
+                        // run them through babel. Because the path tested is the resolved, absolute
+                        // path, these could be anywhere thanks to yarn link. We must also not
+                        // include node modules inside these modules, so we add 'src'.
+                        if (f.startsWith(reactSdkSrcDir)) return true;
+                        if (f.startsWith(jsSdkSrcDir)) return true;
+
+                        // but we can't run all of our dependencies through babel (many of them still
+                        // use module.exports which breaks if babel injects an 'include' for its
+                        // polyfills: probably fixable but babeling all our dependencies is probably
+                        // not necessary anyway). So, for anything else, don't babel.
+                        return false;
+                    },
                     loader: 'babel-loader',
                     options: {
                         cacheDirectory: true
