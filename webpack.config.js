@@ -32,13 +32,14 @@ module.exports = (env, argv) => {
 
         entry: {
             "bundle": "./src/vector/index.js",
-            "indexeddb-worker": "./src/vector/indexeddb-worker.js",
-            "dendrite-sw": "./src/vector/dendrite-sw.js",
+            "indexeddb_worker": "./src/vector/indexeddb-worker.js",
+            "dendrite_sw": "./src/vector/dendrite-sw.js",
             "mobileguide": "./src/vector/mobile_guide/index.js",
             "sqlite_bridge": "./node_modules/go-sqlite3-js/js/bridge.js",
             "go_http_bridge": "./node_modules/go-http-js-libp2p/js/bridge.js",
             "sql_wasm": "./node_modules/go-sqlite3-js/node_modules/sql.js/dist/sql-wasm.wasm",
             "dendrite_wasm": "./src/vector/dendrite.wasm",
+            "wasm_exec": "./src/vector/wasm_exec.js",
 
             // CSS themes
             "theme-light": "./node_modules/matrix-react-sdk/res/themes/light/css/light.scss",
@@ -232,8 +233,8 @@ module.exports = (env, argv) => {
                     loader: "file-loader",
                     type: "javascript/auto", // https://github.com/webpack/webpack/issues/6725
                     options: {
-                        // fixme - we should have a hash in this for cachebusting, but haven't figured
-                        // out a way yet to pass the resulting path from webpack into dendrite-sw
+                        // fixme: reintroduce [hash] once we can figure out how to pass it into the
+                        // dendrite service worker nicely
                         name: '[name].[ext]',
                         outputPath: '.',
                     },

@@ -27,7 +27,10 @@
 	}
 
 	if (!global.fs && global.require) {
-		global.fs = require("fs");
+		// XXX: require("fs") apparently returns {} in vector-web for webpack reasons
+		// so remove this so the polyfill below kicks in.
+		//
+		//global.fs = require("fs");
 	}
 
 	if (!global.fs) {

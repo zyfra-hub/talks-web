@@ -14,7 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-self.importScripts("wasm_exec.js", "bundles/go_http_bridge.js", "bundles/sqlite_bridge.js")
+const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
+
+self.importScripts(`${bundle_path}/wasm_exec.js`,
+                   `${bundle_path}/go_http_bridge.js`,
+                   `${bundle_path}/sqlite_bridge.js`)
 
 self.addEventListener('install', function(event) {
     console.log("installing SW")
@@ -24,13 +28,13 @@ self.addEventListener('activate', function(event) {
     console.log("SW activated")
 
     const config = {
-        locateFile: filename => 'sql_wasm.wasm'
+        locateFile: filename => `${bundle_path}/../../sql-wasm.wasm`
     }
 
     event.waitUntil(
         sqlite_bridge.init(config).then(()=>{
             const go = new Go()
-            WebAssembly.instantiateStreaming(fetch('dendrite.wasm'), go.importObject).then((result) => {
+            WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject).then((result) => {
                 go.run(result.instance)
             });
         })

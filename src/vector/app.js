@@ -170,6 +170,20 @@ export async function loadApp() {
         throw new Error("Missing indexeddb worker script!");
     }
     MatrixClientPeg.setIndexedDbWorkerScript(window.vector_indexeddb_worker_script);
+
+    // load dendrite, if available
+    if (window.vector_dendrite_worker_script && 'serviceWorker' in navigator) {
+        window.addEventListener('load', ()=>{
+            navigator.serviceWorker.register(window.vector_dendrite_worker_script).then(function(registration) {
+                // Registration was successful
+                console.log('ServiceWorker registration successful with scope: ', registration.scope)
+            }, (err)=>{
+                // registration failed :(
+                console.log('ServiceWorker registration failed: ', err)
+            })
+        })
+    }
+
     CallHandler.setConferenceHandler(VectorConferenceHandler);
 
     window.addEventListener('hashchange', onHashChange);

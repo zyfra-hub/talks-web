@@ -38,14 +38,15 @@
     <section id="matrixchat" style="height: 100%; overflow: auto;"></section>
     <noscript>Sorry, Riot requires JavaScript to be enabled.</noscript> <!-- TODO: Translate this? -->
     <script>
-        window.vector_indexeddb_worker_script = '<%= htmlWebpackPlugin.files.chunks['indexeddb-worker'].entry %>';
-        window.vector_dendrite_worker_script = '<%= htmlWebpackPlugin.files.chunks['dendrite-sw'].entry %>';
+        window.vector_indexeddb_worker_script = '<%= htmlWebpackPlugin.files.chunks['indexeddb_worker'].entry %>';
+        window.vector_dendrite_worker_script = '<%= htmlWebpackPlugin.files.chunks['dendrite_sw'].entry %>';
     </script>
     <script src="<%= htmlWebpackPlugin.files.chunks['bundle'].entry %>"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
-      }
+        // not needed if we have a dendrite SW
+//      if ('serviceWorker' in navigator) {
+//        navigator.serviceWorker.register('sw.js');
+//      }
     </script>
     <img src="<%= require('matrix-react-sdk/res/img/warning.svg') %>" width="24" height="23" style="visibility: hidden; position: absolute; top: 0px; left: 0px;"/>
     <img src="<%= require('matrix-react-sdk/res/img/e2e/warning.svg') %>" width="24" height="23" style="visibility: hidden; position: absolute; top: 0px; left: 0px;"/>
