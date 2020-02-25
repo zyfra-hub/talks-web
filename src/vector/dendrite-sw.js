@@ -41,8 +41,9 @@ self.addEventListener('activate', function(event) {
     )
 })
 
+
 self.addEventListener('fetch', function(event) {
-    console.log("intercepted " + event.request.url)
+    console.log("intercepted " + event.request.method + " " + event.request.url);
     if (event.request.url.match(/\/_matrix\/client/)) {
         if (global.fetchListener) {
             event.respondWith(global.fetchListener.onFetch(event))
