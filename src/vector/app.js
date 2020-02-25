@@ -174,7 +174,7 @@ export async function loadApp() {
     // load dendrite, if available
     if (window.vector_dendrite_worker_script && 'serviceWorker' in navigator) {
         window.addEventListener('load', ()=>{
-            navigator.serviceWorker.register(window.vector_dendrite_worker_script).then(function(registration) {
+            navigator.serviceWorker.register(window.vector_dendrite_worker_script, { scope: "/" }).then(function(registration) {
                 // Registration was successful
                 console.log('ServiceWorker registration successful with scope: ', registration.scope)
             }, (err)=>{
