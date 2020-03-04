@@ -43,16 +43,16 @@ self.addEventListener('activate', function(event) {
 
 
 self.addEventListener('fetch', function(event) {
-    console.log("intercepted " + event.request.method + " " + event.request.url);
     if (event.request.url.match(/\/_matrix\/client/)) {
         if (global.fetchListener) {
-            event.respondWith(global.fetchListener.onFetch(event))
+            console.log("Forwarding " + event.request.url);
+            event.respondWith(global.fetchListener.onFetch(event));
         }
         else {
-            console.log("no fetch listener present for " + event.request.url)
+            console.log("no fetch listener present for " + event.request.url);
         }
     }
     else {
-        return fetch(event.request)
+        return fetch(event.request);
     }
 })
