@@ -47,6 +47,9 @@ self.addEventListener('activate', function(event) {
             const go = new Go()
             WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject).then((result) => {
                 go.run(result.instance)
+                // make fetch calls go through this sw - notably if a page registers a sw, it does NOT go through any sw by default
+                // unless you refresh or call this function.
+                self.clients.claim()
             });
         })
     )
