@@ -26,6 +26,17 @@ self.addEventListener('install', function(event) {
 
 self.addEventListener('activate', function(event) {
     console.log("SW activated")
+    global.process = {
+        pid: 1,
+        env: {
+            DEBUG: "*",
+        }
+    };
+    global.fs.stat = function(path, cb) {
+        cb({
+            code: "EINVAL",
+        });
+    }
 
     const config = {
         locateFile: filename => `${bundle_path}/../../sql-wasm.wasm`
