@@ -176,7 +176,28 @@ export async function loadApp() {
         window.addEventListener('load', ()=>{
             navigator.serviceWorker.register(window.vector_dendrite_worker_script, { scope: "/" }).then(function(registration) {
                 // Registration was successful
-                console.log('ServiceWorker registration successful with scope: ', registration.scope)
+                console.log('ServiceWorker sw.js registration successful with scope: ', registration.scope);
+                /* const currWorker = registration.active;
+                currWorker.addEventListener('statechange', () => {
+                    console.log("Current sw.js state: ", currWorker.state)
+                }); */
+
+                registration.addEventListener('updatefound', () => {
+                    console.log("New dendrite sw.js found!")
+                    const newWorker = registration.installing;
+                    if (!newWorker) {
+                        return;
+                    }
+                    newWorker.addEventListener('statechange', () => {
+                        console.log("New sw.js state: ", newWorker.state)
+                    });
+                })
+
+                console.log("sw.js listening for new updates...");
+                // periodically check for updates
+                setInterval(function() {
+                    registration.update();
+                }, 1000 * 60) // once a minute
             }, (err)=>{
                 // registration failed :(
                 console.log('ServiceWorker registration failed: ', err)
