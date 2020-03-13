@@ -16,7 +16,7 @@
 
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
 
-const version = "0.0.2"
+const version = "0.0.1"
 
 self.importScripts(`${bundle_path}/wasm_exec.js`,
                    `${bundle_path}/go_http_bridge.js`,
@@ -62,6 +62,77 @@ self.addEventListener('activate', function(event) {
     )
 })
 
+async function sendRequestToGo(event) {
+    if (!global._go_js_server || !global._go_js_server.fetch) {
+        console.log(`dendrite-sw.js: v${version} no fetch listener present for ${event.request.url}`);
+        return
+    }
+    console.log(`dendrite-sw.js: v${version} forwarding ${event.request.url} to Go`);
+    const req = event.request
+    let reqHeaders = ''
+    if (req.headers) {
+        for (const header of req.headers) {
+            // FIXME: is this a safe header encoding?
+            reqHeaders += `${header[0]}: ${header[1]}\n`
+        }
+    }
+    let jj = null;
+    if (req.method === "POST" || req.method === "PUT") {
+        jj = await req.json();
+        jj = JSON.stringify(jj);
+        reqHeaders += `Content-Length: ${new Blob([jj]).size}`; // include utf-8 chars properly
+    }
+
+    if (reqHeaders.length > 0) {
+        reqHeaders = `\r\n${reqHeaders}`
+    }
+
+    // Replace the timeout value for /sync calls to be 20s not 30s because Firefox
+    // will aggressively cull service workers after a 30s idle period. Chrome doesn't.
+    // See https://bugzilla.mozilla.org/show_bug.cgi?id=1378587
+    const fullurl = req.url.replace("timeout=30000", "timeout=20000");
+    
+    const reqString = `${req.method} ${fullurl} HTTP/1.0${reqHeaders}\r\n\r\n${jj ? jj : ''}`
+
+    const res = await global._go_js_server.fetch(reqString)
+    if (res.error) {
+        console.error(`dendrite-sw.js: v${version} Error for request: ${event.request.url} => ${res.error}`)
+        return
+    }
+    const respString = res.result;
+
+    const m = respString.match(/^(HTTP\/1.[01]) ((.*?) (.*?))(\r\n([^]*?)?(\r\n\r\n([^]*?)))?$/)
+    if (!m) {
+        console.warn("couldn't parse resp", respString);
+        return;
+    }
+    const response = {
+        "proto": m[1],
+        "status": m[2],
+        "statusCode": parseInt(m[3]),
+        "headers": m[6],
+        "body": m[8],
+    }
+
+    const respHeaders = new Headers()
+    const headerLines = response.headers.split('\r\n')
+    for (const headerLine of headerLines) {
+        // FIXME: is this safe header parsing? Do we need to worry about line-wrapping?
+        const match = headerLine.match(/^(.+?): *(.*?)$/)
+        if (match) {
+            respHeaders.append(match[1], match[2])
+        }
+        else {
+            console.log("couldn't parse headerLine ", headerLine)
+        }
+    }
+
+    return new Response(response.body, {
+        status: response.statusCode,
+        headers: respHeaders,
+    })
+}
+
 
 self.addEventListener('fetch', function(event) {
     event.respondWith((async () => {
@@ -74,14 +145,7 @@ self.addEventListener('fetch', function(event) {
         }
 
         if (event.request.url.match(/\/_matrix\/client/)) {
-            if (global.fetchListener) {
-                console.log(`dendrite-sw.js: v${version} Forwarding ${event.request.url}`);
-                const response = await global.fetchListener.onFetch(event);
-                return response;
-            }
-            else {
-                console.log(`dendrite-sw.js: v${version} no fetch listener present for ${event.request.url}`);
-            }
+            return await sendRequestToGo(event);
         }
         else {
             return fetch(event.request);
