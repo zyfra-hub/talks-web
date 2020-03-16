@@ -22,15 +22,8 @@ self.importScripts(`${bundle_path}/wasm_exec.js`,
                    `${bundle_path}/go_http_bridge.js`,
                    `${bundle_path}/sqlite_bridge.js`)
 
-self.addEventListener('install', function(event) {
-    console.log(`dendrite-sw.js: v${version} SW install`)
-    // Tell the browser to kill old sw's running in other tabs and replace them with this one
-    // This may cause spontaneous logouts.
-    self.skipWaiting();
-})
-
-self.addEventListener('activate', function(event) {
-    console.log(`dendrite-sw.js: v${version} SW activate`)
+function initDendrite() {
+    console.log(`dendrite-sw.js: v${version} SW init`)
     global.process = {
         pid: 1,
         env: {
@@ -46,23 +39,46 @@ self.addEventListener('activate', function(event) {
     const config = {
         locateFile: filename => `${bundle_path}/../../sql-wasm.wasm`
     }
+    
+    const go = new Go();
+    return sqlite_bridge.init(config).then(()=>{
+        console.log(`dendrite-sw.js: v${version} starting dendrite.wasm...`)
+        return WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject)
+    }).then((result) => {
+        go.run(result.instance)
+        // make fetch calls go through this sw - notably if a page registers a sw, it does NOT go through any sw by default
+        // unless you refresh or call this function.
+        console.log(`dendrite-sw.js: v${version} claiming open browser tabs`)
+        self.clients.claim()
+    }).then(async function() {
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        for (let i = 0; i < 30; i++) { // 3s
+            if (global._go_js_server) {
+                return;
+            }
+            await sleep(100);
+        }
+        throw new Error("Timed out waiting for _go_js_server to be set.")
+    });
+}
+const initDendritePromise = initDendrite();
 
-    event.waitUntil(
-        sqlite_bridge.init(config).then(()=>{
-            console.log(`dendrite-sw.js: v${version} starting dendrite.wasm...`)
-            const go = new Go()
-            WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject).then((result) => {
-                go.run(result.instance)
-                // make fetch calls go through this sw - notably if a page registers a sw, it does NOT go through any sw by default
-                // unless you refresh or call this function.
-                console.log(`dendrite-sw.js: v${version} claiming open browser tabs`)
-                self.clients.claim()
-            });
-        })
-    )
+self.addEventListener('install', function(event) {
+    console.log(`dendrite-sw.js: v${version} SW install`)
+    // Tell the browser to kill old sw's running in other tabs and replace them with this one
+    // This may cause spontaneous logouts.
+    self.skipWaiting();
+})
+
+self.addEventListener('activate', function(event) {
+    console.log(`dendrite-sw.js: v${version} SW activate`)
+    event.waitUntil(initDendritePromise)
 })
 
 async function sendRequestToGo(event) {
+    await initDendritePromise; // this sets the global fetch listener
     if (!global._go_js_server || !global._go_js_server.fetch) {
         console.log(`dendrite-sw.js: v${version} no fetch listener present for ${event.request.url}`);
         return
