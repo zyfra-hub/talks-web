@@ -49,12 +49,10 @@
         <% }
     } %>
   </head>
-  <body style="height: 100%;" data-vector-indexeddb-worker-script="<%= htmlWebpackPlugin.files.chunks['indexeddb-worker'].entry %>">
+  <body style="height: 100%;"
+  data-vector-indexeddb-worker-script="<%= htmlWebpackPlugin.files.chunks['indexeddb_worker'].entry %>"
+  data-vector-dendrite-worker-script="<%= htmlWebpackPlugin.files.chunks['dendrite_sw'].entry %>">
     <noscript>Sorry, Riot requires JavaScript to be enabled.</noscript> <!-- TODO: Translate this? -->
-    <script>
-        window.vector_indexeddb_worker_script = '<%= htmlWebpackPlugin.files.chunks['indexeddb_worker'].entry %>';
-        window.vector_dendrite_worker_script = '<%= htmlWebpackPlugin.files.chunks['dendrite_sw'].entry %>';
-    </script>
     <section id="matrixchat" style="height: 100%; overflow: auto;"></section>
     <script src="<%= htmlWebpackPlugin.files.chunks['bundle'].entry %>"></script>
     <img src="<%= require('matrix-react-sdk/res/img/warning.svg') %>" width="24" height="23" style="visibility: hidden; position: absolute; top: 0px; left: 0px;"/>

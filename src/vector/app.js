@@ -186,9 +186,10 @@ export async function loadApp() {
     MatrixClientPeg.setIndexedDbWorkerScript(vectorIndexeddbWorkerScript);
 
     // load dendrite, if available
-    if (window.vector_dendrite_worker_script && 'serviceWorker' in navigator) {
+    const vectorDendriteWorkerScript = document.body.dataset.vectorDendriteWorkerScript;
+    if (vectorDendriteWorkerScript && 'serviceWorker' in navigator) {
         window.addEventListener('load', ()=>{
-            navigator.serviceWorker.register(window.vector_dendrite_worker_script, { scope: "/" }).then(function(registration) {
+            navigator.serviceWorker.register(vectorDendriteWorkerScript, { scope: "/" }).then(function(registration) {
                 // Registration was successful
                 console.log('ServiceWorker sw.js registration successful with scope: ', registration.scope);
                 /* const currWorker = registration.active;

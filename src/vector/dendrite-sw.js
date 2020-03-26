@@ -1,4 +1,3 @@
-// -*- coding: utf-8 -*-
 // Copyright 2020 The Matrix.org Foundation C.I.C.
 // Copyright 2020 New Vector Ltd
 // 
