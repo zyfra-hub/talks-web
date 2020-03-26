@@ -82,12 +82,6 @@ that downloads, stores, and indexes room messages for E2E encrypted rooms.
 The existing search will transparently work for encrypted rooms just like it
 does for non-encrypted.
 
-## New invite dialog (`feature_ftue_dms`)
-
-An improved dialog for inviting users. This replaces both the DM creation dialog 
-and the 'invite user' dialog, using your recent DMs as a suggestion for who to chat
-with.
-
 ## Bridge info tab (`feature_bridge_state`)
 
 Adds a "Bridge Info" tab to the Room Settings dialog, if a compatible bridge is
@@ -99,3 +93,8 @@ tab as the single source of truth just yet.
 
 This adds a presence indicator in the room list next to DM rooms where the other
 person is online.
+
+## Show padlocks on invite only rooms (`feature_invite_only_padlocks`)
+
+This adds padlocks to room list tiles and room header for invite only rooms.
+This feature flag (unlike most) is enabled by default.

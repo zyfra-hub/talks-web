@@ -35,6 +35,7 @@ const tray = require('./tray');
 const vectorMenu = require('./vectormenu');
 const webContentsHandler = require('./webcontents-handler');
 const updater = require('./updater');
+const protocolInit = require('./protocol');
 
 const windowStateKeeper = require('electron-window-state');
 const Store = require('electron-store');
@@ -346,6 +347,18 @@ ipcMain.on('seshat', async function(ev, payload) {
             }
             break;
 
+        case 'getStats':
+            if (eventIndex === null) ret = 0;
+            else {
+                try {
+                    ret = await eventIndex.getStats();
+                } catch (e) {
+                    sendError(payload.id, e);
+                    return;
+                }
+            }
+            break;
+
         case 'removeCrawlerCheckpoint':
             if (eventIndex === null) ret = false;
             else {
@@ -363,6 +376,18 @@ ipcMain.on('seshat', async function(ev, payload) {
             else {
                 try {
                     ret = await eventIndex.addCrawlerCheckpoint(args[0]);
+                } catch (e) {
+                    sendError(payload.id, e);
+                    return;
+                }
+            }
+            break;
+
+        case 'loadFileEvents':
+            if (eventIndex === null) ret = [];
+            else {
+                try {
+                    ret = await eventIndex.loadFileEvents(args[0]);
                 } catch (e) {
                     sendError(payload.id, e);
                     return;
@@ -402,6 +427,9 @@ if (!gotLock) {
     console.log('Other instance detected: exiting');
     app.exit();
 }
+
+// do this after we know we are the primary instance of the app
+protocolInit();
 
 const launcher = new AutoLaunch({
     name: vectorConfig.brand || 'Riot',

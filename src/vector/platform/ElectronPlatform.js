@@ -5,6 +5,7 @@ Copyright 2016 Aviral Dasgupta
 Copyright 2016 OpenMarket Ltd
 Copyright 2018 New Vector Ltd
 Copyright 2019 Michael Telatynski <7t3chguy@gmail.com>
+Copyright 2020 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,6 +25,11 @@ import BaseEventIndexManager from 'matrix-react-sdk/src/indexing/BaseEventIndexM
 import dis from 'matrix-react-sdk/src/dispatcher';
 import { _t } from 'matrix-react-sdk/src/languageHandler';
 import * as rageshake from 'matrix-react-sdk/src/rageshake/rageshake';
+import {MatrixClient} from "matrix-js-sdk";
+import Modal from "matrix-react-sdk/src/Modal";
+import InfoDialog from "matrix-react-sdk/src/components/views/dialogs/InfoDialog";
+import Spinner from "matrix-react-sdk/src/components/views/elements/Spinner";
+import React from "react";
 
 const ipcRenderer = window.ipcRenderer;
 
@@ -144,12 +150,20 @@ class SeshatIndexManager extends BaseEventIndexManager {
         return this._ipcCall('removeCrawlerCheckpoint', checkpoint);
     }
 
+    async loadFileEvents(args): Promise<[EventAndProfile]> {
+        return this._ipcCall('loadFileEvents', args);
+    }
+
     async loadCheckpoints(): Promise<[CrawlerCheckpoint]> {
         return this._ipcCall('loadCheckpoints');
     }
 
     async closeEventIndex(): Promise<> {
         return this._ipcCall('closeEventIndex');
+    }
+
+    async getStats(): Promise<> {
+        return this._ipcCall('getStats');
     }
 
     async deleteEventIndex(): Promise<> {
@@ -192,16 +206,6 @@ export default class ElectronPlatform extends VectorBasePlatform {
 
         this.startUpdateCheck = this.startUpdateCheck.bind(this);
         this.stopUpdateCheck = this.stopUpdateCheck.bind(this);
-
-        this._tryPersistStorage();
-    }
-
-    async _tryPersistStorage() {
-        if (navigator.storage && navigator.storage.persist) {
-            const granted = await navigator.storage.persist();
-            const persisted = await navigator.storage.persisted();
-            console.log("Storage persist request granted: " + granted + " persisted: " + persisted);
-        }
     }
 
     async getConfig(): Promise<{}> {
@@ -386,5 +390,26 @@ export default class ElectronPlatform extends VectorBasePlatform {
 
     getEventIndexingManager(): BaseEventIndexManager | null {
         return this.eventIndexManager;
+    }
+
+    setLanguage(preferredLangs: string[]) {
+        this._ipcCall('setLanguage', preferredLangs).catch(error => {
+            console.log("Failed to send setLanguage IPC to Electron");
+            console.error(error);
+        });
+    }
+
+    getSSOCallbackUrl(hsUrl: string, isUrl: string): URL {
+        const url = super.getSSOCallbackUrl(hsUrl, isUrl);
+        url.protocol = "riot";
+        return url;
+    }
+
+    startSingleSignOn(mxClient: MatrixClient, loginType: "sso" | "cas") {
+        super.startSingleSignOn(mxClient, loginType); // this will get intercepted by electron-main will-navigate
+        Modal.createTrackedDialog('Electron', 'SSO', InfoDialog, {
+            title: _t("Go to your browser to complete Sign In"),
+            description: <Spinner />,
+        });
     }
 }
