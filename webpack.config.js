@@ -35,9 +35,9 @@ module.exports = (env, argv) => {
             "indexeddb_worker": "./src/vector/indexeddb-worker.js",
             "dendrite_sw": "./src/vector/dendrite-sw.js",
             "mobileguide": "./src/vector/mobile_guide/index.js",
-            "sqlite_bridge": "./node_modules/go-sqlite-js/js/bridge.js",
+            "sqlitejs": "./src/vector/sqlitejs.js",
             "go_http_bridge": "./node_modules/go-http-js-libp2p/js/bridge.js",
-            "sql_wasm": "./node_modules/go-sqlite-js/node_modules/sql.js/dist/sql-wasm.wasm",
+            "sql_wasm": "./node_modules/sql.js/dist/sql-wasm.wasm",
             "dendrite_wasm": "./src/vector/dendrite.wasm",
             "wasm_exec": "./src/vector/wasm_exec.js",
 
@@ -364,6 +364,7 @@ module.exports = (env, argv) => {
             // tedious in Riot since that can take a while.
             hot: false,
             inline: false,
+            writeToDisk: true,
         },
     };
 };

@@ -16,11 +16,11 @@
 
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
 
-const version = "0.0.1"
+const version = "0.0.3"
 
 self.importScripts(`${bundle_path}/wasm_exec.js`,
                    `${bundle_path}/go_http_bridge.js`,
-                   `${bundle_path}/sqlite_bridge.js`)
+                   `${bundle_path}/sqlitejs.js`)
 
 function initDendrite() {
     console.log(`dendrite-sw.js: v${version} SW init`)
@@ -41,7 +41,7 @@ function initDendrite() {
     }
     
     const go = new Go();
-    return sqlite_bridge.init(config).then(()=>{
+    return sqlitejs.init(config).then(()=>{
         console.log(`dendrite-sw.js: v${version} starting dendrite.wasm...`)
         return WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject)
     }).then((result) => {
