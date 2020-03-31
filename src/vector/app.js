@@ -26,6 +26,7 @@ import React from 'react';
 global.React = React;
 
 import ReactDOM from 'react-dom';
+import Matrix from 'matrix-js-sdk';
 import * as sdk from 'matrix-react-sdk';
 import PlatformPeg from 'matrix-react-sdk/src/PlatformPeg';
 import * as VectorConferenceHandler from 'matrix-react-sdk/src/VectorConferenceHandler';
@@ -185,41 +186,6 @@ export async function loadApp() {
     }
     MatrixClientPeg.setIndexedDbWorkerScript(vectorIndexeddbWorkerScript);
 
-    // load dendrite, if available
-    const vectorDendriteWorkerScript = document.body.dataset.vectorDendriteWorkerScript;
-    if (vectorDendriteWorkerScript && 'serviceWorker' in navigator) {
-        window.addEventListener('load', ()=>{
-            navigator.serviceWorker.register(vectorDendriteWorkerScript, { scope: "/" }).then(function(registration) {
-                // Registration was successful
-                console.log('ServiceWorker sw.js registration successful with scope: ', registration.scope);
-                /* const currWorker = registration.active;
-                currWorker.addEventListener('statechange', () => {
-                    console.log("Current sw.js state: ", currWorker.state)
-                }); */
-
-                registration.addEventListener('updatefound', () => {
-                    console.log("New dendrite sw.js found!")
-                    const newWorker = registration.installing;
-                    if (!newWorker) {
-                        return;
-                    }
-                    newWorker.addEventListener('statechange', () => {
-                        console.log("New sw.js state: ", newWorker.state)
-                    });
-                })
-
-                console.log("sw.js listening for new updates...");
-                // periodically check for updates
-                setInterval(function() {
-                    registration.update();
-                }, 1000 * 60) // once a minute
-            }, (err)=>{
-                // registration failed :(
-                console.log('ServiceWorker registration failed: ', err)
-            })
-        })
-    }
-
     CallHandler.setConferenceHandler(VectorConferenceHandler);
 
     window.addEventListener('hashchange', onHashChange);
@@ -308,6 +274,63 @@ export async function loadApp() {
             document.getElementById('matrixchat'),
         );
         return;
+    }
+
+    // load dendrite, if available
+    const vectorDendriteWorkerScript = document.body.dataset.vectorDendriteWorkerScript;
+    if (vectorDendriteWorkerScript && 'serviceWorker' in navigator) {
+        window.addEventListener('load', ()=>{
+            navigator.serviceWorker.register(vectorDendriteWorkerScript, { scope: "/" }).then(function(registration) {
+                // Registration was successful
+                console.log('ServiceWorker sw.js registration successful with scope: ', registration.scope);
+                /* const currWorker = registration.active;
+                currWorker.addEventListener('statechange', () => {
+                    console.log("Current sw.js state: ", currWorker.state)
+                }); */
+
+                registration.addEventListener('updatefound', () => {
+                    console.log("New dendrite sw.js found!")
+                    const newWorker = registration.installing;
+                    if (!newWorker) {
+                        return;
+                    }
+                    newWorker.addEventListener('statechange', () => {
+                        console.log("New sw.js state: ", newWorker.state)
+                    });
+                })
+
+                console.log("sw.js listening for new updates...");
+                // periodically check for updates
+                setInterval(function() {
+                    registration.update();
+                }, 1000 * 60) // once a minute
+            }, (err)=>{
+                // registration failed :(
+                console.log('ServiceWorker registration failed: ', err)
+            })
+        })
+        // check if we are logged in and if not, register.
+        const owner = Lifecycle.getStoredSessionOwner();
+        if (!owner) {
+            console.log("Auto-registration in progress");
+            const cli = Matrix.createClient({
+                baseUrl: "https://p2p.riot.im",
+            });
+            const password = Math.random() + "-" + Math.random();
+
+            const response = await cli.register("p2p", password, "", { type: "m.login.dummy" });
+            console.log("Auto-registration done ", response);
+            await Lifecycle.setLoggedIn({
+                userId: response.user_id,
+                deviceId: response.device_id,
+                homeserverUrl: cli.getHomeserverUrl(),
+                accessToken: response.access_token,
+                guest: cli.isGuest(),
+            });
+
+            console.log("Auto-registration SET DONE>>>>>>>>");
+            // notify?
+        }
     }
 
     const validBrowser = checkBrowserFeatures();
