@@ -151,13 +151,14 @@ async function sendRequestToGo(event) {
 
 self.addEventListener('fetch', function(event) {
     event.respondWith((async () => {
+        /*
         // If this is a page refresh for the current page, then shunt in the new sw
         // https://github.com/w3c/ServiceWorker/issues/1238
         if (event.request.mode === "navigate" && event.request.method === "GET" && registration.waiting && (await clients.matchAll()).length < 2) {
             console.log("Forcing new sw.js into page")
             registration.waiting.postMessage('skipWaiting');
             return new Response("", {headers: {"Refresh": "0"}});
-        }
+        } */
 
         if (event.request.url.match(/\/_matrix\/client/)) {
             return await sendRequestToGo(event);

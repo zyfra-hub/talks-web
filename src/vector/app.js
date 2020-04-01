@@ -35,6 +35,7 @@ import {_t, _td, newTranslatableError} from 'matrix-react-sdk/src/languageHandle
 import AutoDiscoveryUtils from 'matrix-react-sdk/src/utils/AutoDiscoveryUtils';
 import {AutoDiscovery} from "matrix-js-sdk/src/autodiscovery";
 import * as Lifecycle from "matrix-react-sdk/src/Lifecycle";
+import dis from "matrix-react-sdk/src/dispatcher";
 
 import url from 'url';
 
@@ -279,7 +280,9 @@ export async function loadApp() {
     // load dendrite, if available
     const vectorDendriteWorkerScript = document.body.dataset.vectorDendriteWorkerScript;
     if (vectorDendriteWorkerScript && 'serviceWorker' in navigator) {
-        window.addEventListener('load', ()=>{
+        console.log("dendrite code exec... ", document.readyState);
+        const loadDendriteSw = ()=>{
+            console.log("Registering dendrite sw...");
             navigator.serviceWorker.register(vectorDendriteWorkerScript, { scope: "/" }).then(function(registration) {
                 // Registration was successful
                 console.log('ServiceWorker sw.js registration successful with scope: ', registration.scope);
@@ -303,23 +306,28 @@ export async function loadApp() {
                 // periodically check for updates
                 setInterval(function() {
                     registration.update();
-                }, 1000 * 60) // once a minute
+                }, 1000 * 60 * 30) // once every 30 minutes
             }, (err)=>{
                 // registration failed :(
                 console.log('ServiceWorker registration failed: ', err)
             })
-        })
+        }
+        if (document.readyState === "loading") {
+            window.addEventListener('DOMContentLoaded', loadDendriteSw);
+        } else {
+            loadDendriteSw();
+        }
+        
         // check if we are logged in and if not, register.
-        const owner = Lifecycle.getStoredSessionOwner();
-        if (!owner) {
-            console.log("Auto-registration in progress");
+        const autoRegister = async () => {
+            console.log("dendrite: Auto-registration in progress");
             const cli = Matrix.createClient({
                 baseUrl: "https://p2p.riot.im",
             });
             const password = Math.random() + "-" + Math.random();
 
             const response = await cli.register("p2p", password, "", { type: "m.login.dummy" });
-            console.log("Auto-registration done ", response);
+            console.log("dendrite: Auto-registration done ", response);
             await Lifecycle.setLoggedIn({
                 userId: response.user_id,
                 deviceId: response.device_id,
@@ -327,10 +335,30 @@ export async function loadApp() {
                 accessToken: response.access_token,
                 guest: cli.isGuest(),
             });
-
-            console.log("Auto-registration SET DONE>>>>>>>>");
-            // notify?
         }
+        const owner = Lifecycle.getStoredSessionOwner();
+        if (!owner) {
+            console.log("dendrite: auto-registering, nothing in local storage");
+            await autoRegister()
+            console.log("dendrite: auto-registered because nothing in local storage");
+        }
+        dis.register((payload) => {
+            if (payload.action !== "on_logged_in") {
+                return;
+            }
+            console.log("dendrite: on_logged_in, attaching logged out listener");
+            MatrixClientPeg.get().on('Session.logged_out', () => {
+                console.log("dendrite: Session.logged_out, re-registering");
+                // let the other listener for this clear the cache.
+                setTimeout(async () => {
+                    await autoRegister();
+                    console.log("dendrite: auto-registered due to logout, go to home");
+                    dis.dispatch({
+                        action: 'view_home_page',
+                    });
+                }, 10)
+            })
+        });
     }
 
     const validBrowser = checkBrowserFeatures();
