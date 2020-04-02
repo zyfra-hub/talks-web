@@ -125,6 +125,16 @@ function onNewScreen(screen) {
     const hash = '#/' + screen;
     lastLocationHashSet = hash;
     window.location.hash = hash;
+    if (!window.matrixChat) {
+        return;
+    }
+    if (screen === "register" || screen === "login" || screen === "welcome") {
+        autoRegister().then((creds) => {
+            window.matrixChat.onUserCompletedLoginFlow(creds, "-")
+        }, (err) => {
+            console.error("Failed to auto-register:", err)
+        })
+    }
 }
 
 // We use this to work out what URL the SDK should
@@ -174,6 +184,41 @@ function onTokenLoginCompleted() {
     window.location.href = formatted;
 }
 
+async function autoRegister() {
+    console.log("dendrite: Auto-registration in progress");
+    const cli = Matrix.createClient({
+        baseUrl: "https://p2p.riot.im",
+    });
+    const password = "this should be really really secure";
+
+    // make sure the server is up (active service worker)
+    await navigator.serviceWorker.ready;
+
+    let response = null;
+    try {
+        response = await cli.register("p2p", password, "", { type: "m.login.dummy" });
+        console.log("dendrite: Auto-registration done ", response);
+    } catch (err) {
+        console.error("dendrite: failed to register, trying to login:", err)
+        response = await cli.login("m.login.password", {
+            identifier: {
+                type: "m.id.user",
+                user: "p2p",
+            },
+            password: password,
+            initial_device_display_name: "p2p-dendrite",
+        })
+    }
+
+    return {
+        userId: response.user_id,
+        deviceId: response.device_id,
+        homeserverUrl: cli.getHomeserverUrl(),
+        accessToken: response.access_token,
+        guest: cli.isGuest(),
+    };
+}
+
 export async function loadApp() {
     // XXX: the way we pass the path to the worker script from webpack via html in body's dataset is a hack
     // but alternatives seem to require changing the interface to passing Workers to js-sdk
@@ -185,7 +230,7 @@ export async function loadApp() {
         // make sure the indexeddb script is present, so fail hard.
         throw new Error("Missing indexeddb worker script!");
     }
-    MatrixClientPeg.setIndexedDbWorkerScript(vectorIndexeddbWorkerScript);
+    // MatrixClientPeg.setIndexedDbWorkerScript(vectorIndexeddbWorkerScript);
 
     CallHandler.setConferenceHandler(VectorConferenceHandler);
 
@@ -282,35 +327,32 @@ export async function loadApp() {
     if (vectorDendriteWorkerScript && 'serviceWorker' in navigator) {
         console.log("dendrite code exec... ", document.readyState);
         const loadDendriteSw = ()=>{
-            console.log("Registering dendrite sw...");
+            console.log("Registering dendrite sw...", vectorDendriteWorkerScript);
+            console.log("swjs: invoke navigator.serviceWorker.register")
             navigator.serviceWorker.register(vectorDendriteWorkerScript, { scope: "/" }).then(function(registration) {
+                console.log("swjs: navigator.serviceWorker.register resolved", registration)
                 // Registration was successful
                 console.log('ServiceWorker sw.js registration successful with scope: ', registration.scope);
-                /* const currWorker = registration.active;
-                currWorker.addEventListener('statechange', () => {
-                    console.log("Current sw.js state: ", currWorker.state)
-                }); */
-
-                registration.addEventListener('updatefound', () => {
-                    console.log("New dendrite sw.js found!")
-                    const newWorker = registration.installing;
-                    if (!newWorker) {
-                        return;
-                    }
-                    newWorker.addEventListener('statechange', () => {
-                        console.log("New sw.js state: ", newWorker.state)
-                    });
-                })
-
-                console.log("sw.js listening for new updates...");
                 // periodically check for updates
                 setInterval(function() {
+                    console.log("swjs invoke registration.update")
                     registration.update();
                 }, 1000 * 60 * 30) // once every 30 minutes
             }, (err)=>{
                 // registration failed :(
-                console.log('ServiceWorker registration failed: ', err)
-            })
+                console.log('dendrite: ServiceWorker registration failed: ', err);
+            });
+            // First, do a one-off check if there's currently a
+            // service worker in control.
+            if (navigator.serviceWorker.controller) {
+                console.log('dendrite: This page is currently controlled by:', navigator.serviceWorker.controller);
+            }
+
+            // Then, register a handler to detect when a new or
+            // updated service worker takes control.
+            navigator.serviceWorker.oncontrollerchange = function() {
+                console.log('dendrite: This page is now controlled by:', navigator.serviceWorker.controller);
+            };
         }
         if (document.readyState === "loading") {
             window.addEventListener('DOMContentLoaded', loadDendriteSw);
@@ -318,6 +360,7 @@ export async function loadApp() {
             loadDendriteSw();
         }
         
+        /*
         // check if we are logged in and if not, register.
         const autoRegister = async () => {
             console.log("dendrite: Auto-registration in progress");
@@ -358,7 +401,7 @@ export async function loadApp() {
                     });
                 }, 10)
             })
-        });
+        }); */
     }
 
     const validBrowser = checkBrowserFeatures();

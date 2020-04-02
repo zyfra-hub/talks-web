@@ -32,7 +32,7 @@ module.exports = (env, argv) => {
 
         entry: {
             "bundle": "./src/vector/index.js",
-            "indexeddb_worker": "./src/vector/indexeddb-worker.js",
+            // "indexeddb_worker": "./src/vector/indexeddb-worker.js",
             "dendrite_sw": "./src/vector/dendrite-sw.js",
             "mobileguide": "./src/vector/mobile_guide/index.js",
             "sqlitejs": "./src/vector/sqlitejs.js",

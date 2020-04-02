@@ -14,8 +14,20 @@
 // limitations under the License.
 
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
-
-const version = "0.0.3"
+const id = Math.random();
+console.log("swjs: ", id," dendrite-sw.js file running...")
+const version = "0.0.4"
+self.registration.addEventListener('updatefound', () => {
+    console.log("swjs: ", id," updatefound registration event fired")
+    const newWorker = self.registration.installing;
+    if (!newWorker) {
+        console.log("swjs: ", id," updatefound registration event fired, no installing worker")
+        return;
+    }
+    newWorker.addEventListener('statechange', () => {
+        console.log("swjs: ", id," worker statechange: ", newWorker.state)
+    });
+})
 
 self.importScripts(`${bundle_path}/wasm_exec.js`,
                    `${bundle_path}/go_http_bridge.js`,
@@ -48,6 +60,7 @@ function initDendrite() {
         // make fetch calls go through this sw - notably if a page registers a sw, it does NOT go through any sw by default
         // unless you refresh or call this function.
         console.log(`dendrite-sw.js: v${version} claiming open browser tabs`)
+        console.log("swjs: ", id," invoke self.clients.claim()")
         self.clients.claim()
     }).then(async function() {
         function sleep(ms) {
@@ -55,6 +68,7 @@ function initDendrite() {
         }
         for (let i = 0; i < 30; i++) { // 3s
             if (global._go_js_server) {
+                console.log("swjs: ", id," init dendrite promise resolving")
                 return;
             }
             await sleep(100);
@@ -65,13 +79,16 @@ function initDendrite() {
 const initDendritePromise = initDendrite();
 
 self.addEventListener('install', function(event) {
+    console.log("swjs: ", id," install event fired:", event)
     console.log(`dendrite-sw.js: v${version} SW install`)
     // Tell the browser to kill old sw's running in other tabs and replace them with this one
     // This may cause spontaneous logouts.
+    console.log("swjs: ", id," invoke self.skipWaiting")
     self.skipWaiting();
 })
 
 self.addEventListener('activate', function(event) {
+    console.log("swjs: ", id," activate event fired")
     console.log(`dendrite-sw.js: v${version} SW activate`)
     event.waitUntil(initDendritePromise)
 })
@@ -147,7 +164,6 @@ async function sendRequestToGo(event) {
         headers: respHeaders,
     })
 }
-
 
 self.addEventListener('fetch', function(event) {
     event.respondWith((async () => {

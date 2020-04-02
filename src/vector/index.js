@@ -31,7 +31,7 @@ import './modernizr';
 
 // load service worker if available on this platform
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
+    // navigator.serviceWorker.register('sw.js');
 }
 
 // Ensure the skin is the very first thing to load for the react-sdk. We don't even want to reference
