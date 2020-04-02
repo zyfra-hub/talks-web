@@ -191,8 +191,17 @@ async function autoRegister() {
     });
     const password = "this should be really really secure";
 
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     // make sure the server is up (active service worker)
     await navigator.serviceWorker.ready;
+    // on Firefix, the ready promise resolves just prior to activation
+    // on Chrome, the ready promise resolves just after activation.
+    // We need to make requests AFTER we have been activated, else the /register request
+    // will fail.
+    await sleep(10);
 
     let response = null;
     try {
