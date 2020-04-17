@@ -7520,10 +7520,9 @@ matrix-mock-request@^1.2.3:
     bluebird "^3.5.0"
     expect "^1.20.2"
 
-matrix-react-sdk@2.2.3:
+"matrix-react-sdk@github:matrix-org/matrix-react-sdk#p2p":
   version "2.2.3"
-  resolved "https://registry.yarnpkg.com/matrix-react-sdk/-/matrix-react-sdk-2.2.3.tgz#2687af6acb0f994cbb17a1c4cc37703c437f6080"
-  integrity sha512-tQVa3uAT//f0+Zw+8sKpRl+/gEvelck5kH0V/BOtM+UrreG66L42KgcXNRDlmO8DjD4iEttcoSHsLGr+XZuXyQ==
+  resolved "https://codeload.github.com/matrix-org/matrix-react-sdk/tar.gz/3cf911be9b57797922b366a6fceaf5568c6f6d58"
   dependencies:
     "@babel/runtime" "^7.8.3"
     blueimp-canvas-to-blob "^3.5.0"
