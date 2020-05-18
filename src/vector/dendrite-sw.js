@@ -16,7 +16,7 @@
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
 const id = Math.random();
 console.log("swjs: ", id," dendrite-sw.js file running...")
-const version = "0.0.4"
+const version = "0.0.7"
 self.registration.addEventListener('updatefound', () => {
     console.log("swjs: ", id," updatefound registration event fired")
     const newWorker = self.registration.installing;
@@ -56,7 +56,17 @@ function initDendrite() {
         console.log(`dendrite-sw.js: v${version} starting dendrite.wasm...`)
         return WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject)
     }).then((result) => {
-        go.run(result.instance)
+        go.run(result.instance).then(() => {
+            console.log(`dendrite-sw.js: v${version} dendrite.wasm terminated, restarting...`);
+            // purge databases and p2p nodes.
+            global._go_js_server = undefined;
+            global._go_libp2p_nodes.forEach((n) => {
+                n.stop();
+            });
+            global._go_libp2p_nodes = [];
+            global._go_sqlite_dbs.clear();
+            initDendritePromise = initDendrite();
+        });
         // make fetch calls go through this sw - notably if a page registers a sw, it does NOT go through any sw by default
         // unless you refresh or call this function.
         console.log(`dendrite-sw.js: v${version} claiming open browser tabs`)
@@ -76,7 +86,7 @@ function initDendrite() {
         throw new Error("Timed out waiting for _go_js_server to be set.")
     });
 }
-const initDendritePromise = initDendrite();
+let initDendritePromise = initDendrite();
 
 self.addEventListener('install', function(event) {
     console.log("swjs: ", id," install event fired:", event)
