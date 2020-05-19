@@ -31,7 +31,8 @@ self.registration.addEventListener('updatefound', () => {
 
 self.importScripts(`${bundle_path}/wasm_exec.js`,
                    `${bundle_path}/go_http_bridge.js`,
-                   `${bundle_path}/sqlitejs.js`)
+                   `${bundle_path}/sqlitejs.js`,
+                   `${bundle_path}/localforage.js`)
 
 function initDendrite() {
     console.log(`dendrite-sw.js: v${version} SW init`)
