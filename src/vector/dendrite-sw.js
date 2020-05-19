@@ -13,10 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Dendrite Service Worker version
+// Bumping the patch version of this has no side-effects.
+// Bumping the minor version of this will delete databases.
+const version = "0.0.7"
+
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
 const id = Math.random();
 console.log("swjs: ", id," dendrite-sw.js file running...")
-const version = "0.0.7"
 self.registration.addEventListener('updatefound', () => {
     console.log("swjs: ", id," updatefound registration event fired")
     const newWorker = self.registration.installing;
@@ -34,8 +38,15 @@ self.importScripts(`${bundle_path}/wasm_exec.js`,
                    `${bundle_path}/sqlitejs.js`,
                    `${bundle_path}/localforage.js`)
 
-function initDendrite() {
+async function initDendrite() {
     console.log(`dendrite-sw.js: v${version} SW init`)
+    // check if we need to purge databases (minor version bump)
+    const prevVer = await global.localforage.getItem("dendrite_version")
+    if (prevVer != version) {
+        const nukeDatabase = false; // TODO
+        console.log(`dendrite-sw.js: previous ver ${prevVer} current ${version} nuke databases: ${nukeDatabase}`)
+    }
+
     global.process = {
         pid: 1,
         env: {
@@ -53,39 +64,43 @@ function initDendrite() {
     }
     
     const go = new Go();
-    return sqlitejs.init(config).then(()=>{
-        console.log(`dendrite-sw.js: v${version} starting dendrite.wasm...`)
-        return WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject)
-    }).then((result) => {
-        go.run(result.instance).then(() => {
-            console.log(`dendrite-sw.js: v${version} dendrite.wasm terminated, restarting...`);
-            // purge databases and p2p nodes.
-            global._go_js_server = undefined;
-            global._go_libp2p_nodes.forEach((n) => {
-                n.stop();
-            });
-            global._go_libp2p_nodes = [];
-            global._go_sqlite_dbs.clear();
-            initDendritePromise = initDendrite();
+    await sqlitejs.init(config)
+    console.log(`dendrite-sw.js: v${version} starting dendrite.wasm...`)
+    const result = await WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject)
+    go.run(result.instance).then(() => {
+        console.log(`dendrite-sw.js: v${version} dendrite.wasm terminated, restarting...`);
+        // purge databases and p2p nodes.
+        global._go_js_server = undefined;
+        global._go_libp2p_nodes.forEach((n) => {
+            n.stop();
         });
-        // make fetch calls go through this sw - notably if a page registers a sw, it does NOT go through any sw by default
-        // unless you refresh or call this function.
-        console.log(`dendrite-sw.js: v${version} claiming open browser tabs`)
-        console.log("swjs: ", id," invoke self.clients.claim()")
-        self.clients.claim()
-    }).then(async function() {
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-        for (let i = 0; i < 30; i++) { // 3s
-            if (global._go_js_server) {
-                console.log("swjs: ", id," init dendrite promise resolving")
-                return;
-            }
-            await sleep(100);
-        }
-        throw new Error("Timed out waiting for _go_js_server to be set.")
+        global._go_libp2p_nodes = [];
+        global._go_sqlite_dbs.clear();
+        initDendritePromise = initDendrite();
     });
+    // make fetch calls go through this sw - notably if a page registers a sw, it does NOT go through any sw by default
+    // unless you refresh or call this function.
+    console.log(`dendrite-sw.js: v${version} claiming open browser tabs`)
+    console.log("swjs: ", id," invoke self.clients.claim()")
+    self.clients.claim();
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    let serverIsUp = false;
+    for (let i = 0; i < 30; i++) { // 3s
+        if (global._go_js_server) {
+            console.log("swjs: ", id," init dendrite promise resolving");
+            serverIsUp = true;
+            break;
+        }
+        await sleep(100);
+    }
+    if (!serverIsUp) {
+        throw new Error("Timed out waiting for _go_js_server to be set.");
+    }
+    // persist the new version
+    await global.localforage.setItem("dendrite_version", version);
 }
 let initDendritePromise = initDendrite();
 
