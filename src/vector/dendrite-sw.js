@@ -16,7 +16,7 @@
 // Dendrite Service Worker version
 // Bumping the patch version of this has no side-effects.
 // Bumping the minor version of this will delete databases.
-const version = "0.0.7"
+const version = "0.1.0"
 
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
 const id = Math.random();
