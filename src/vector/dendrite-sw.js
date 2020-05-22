@@ -36,7 +36,39 @@ self.registration.addEventListener('updatefound', () => {
 self.importScripts(`${bundle_path}/wasm_exec.js`,
                    `${bundle_path}/go_http_bridge.js`,
                    `${bundle_path}/sqlitejs.js`,
-                   `${bundle_path}/localforage.js`)
+                   `${bundle_path}/localforage.js`);
+
+let isWriting = false;
+async function writeDatabasesToIndexedDB() {
+    while (true) {
+        await sleep(1000 * 30);
+        try {
+            await syncfs(false);
+        }
+        catch (err) {
+            console.error("syncfs: failed to write to IDB:", err);
+        }
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function syncfs(isStartup) {
+    console.log("syncfs isStartup=",isStartup);
+    return new Promise((resolve, reject) => {
+        global._go_sqlite.FS.syncfs(isStartup, function(err) {
+            if (err) {
+                console.error("syncfs failed:", err);
+                reject(err);
+                return;
+            }
+            console.log("syncfs OK");
+            resolve();
+        });
+    });
+}
 
 async function initDendrite() {
     console.log(`dendrite-sw.js: v${version} SW init`)
@@ -64,7 +96,22 @@ async function initDendrite() {
     }
     
     const go = new Go();
-    await sqlitejs.init(config)
+    await sqlitejs.init(config);
+
+    // periodically write databases to disk
+    if (!isWriting) {
+        isWriting = true;
+        // have to do this before we start dendrite for hopefully obvious reasons...
+        console.log("syncfs", global._go_sqlite.IDBFS);
+        global._go_sqlite.FS.mkdir("/idb");
+        //global._go_sqlite.FS.unmount("/");
+        console.log("syncfs at /idb mkdir ok");
+        global._go_sqlite.FS.mount(global._go_sqlite.IDBFS, {}, "/idb");
+        console.log("syncfs mounted");
+        await syncfs(true); // load from IDB
+        writeDatabasesToIndexedDB();
+    }
+
     console.log(`dendrite-sw.js: v${version} starting dendrite.wasm...`)
     const result = await WebAssembly.instantiateStreaming(fetch(`${bundle_path}/../../dendrite.wasm`), go.importObject)
     go.run(result.instance).then(() => {
@@ -83,9 +130,6 @@ async function initDendrite() {
     console.log(`dendrite-sw.js: v${version} claiming open browser tabs`)
     console.log("swjs: ", id," invoke self.clients.claim()")
     self.clients.claim();
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 
     let serverIsUp = false;
     for (let i = 0; i < 30; i++) { // 3s
