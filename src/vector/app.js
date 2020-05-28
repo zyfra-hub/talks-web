@@ -47,6 +47,7 @@ import ElectronPlatform from './platform/ElectronPlatform';
 import WebPlatform from './platform/WebPlatform';
 
 import {MatrixClientPeg} from 'matrix-react-sdk/src/MatrixClientPeg';
+import {getCachedRoomIDForAlias} from 'matrix-react-sdk/src/RoomAliasCache';
 import SettingsStore from "matrix-react-sdk/src/settings/SettingsStore";
 import SdkConfig from "matrix-react-sdk/src/SdkConfig";
 import {setTheme} from "matrix-react-sdk/src/theme";
@@ -143,6 +144,11 @@ function onNewScreen(screen) {
                 p2pFirstTimeSetup();
             }
         })
+    } else if (screen.startsWith("room/")) {
+        // room/!foo:bar
+        // room/#foo:bar
+        // if this room is public then make sure it is published.
+        p2pEnsurePublished(screen.split("/")[1])
     }
 }
 
@@ -182,6 +188,47 @@ function p2pFirstTimeSetup() {
             },
         }, null, /* priority = */ false, /* static = */ true,
     );
+}
+
+async function p2pEnsurePublished(roomIdOrAlias) {
+    // If the room has just been created, we need to wait for the join_rules to come down /sync
+    // If the app has just been refreshed, we need to wait for the DB to be loaded.
+    // Since we don't really care when this is done, just sleep a bit.
+    await sleep(1000);
+    console.log("p2pEnsurePublished ", roomIdOrAlias);
+    try {
+        const client = MatrixClientPeg.get();
+        // convert alias to room ID
+        let roomId;
+        if (roomIdOrAlias.startsWith("!")) {
+            roomId = roomIdOrAlias;
+        } else {
+            roomId = getCachedRoomIDForAlias(roomIdOrAlias);
+        }
+
+        // fetch the join_rules, check if public
+        const room = client.getRoom(roomId);
+        if (!room) {
+            throw new Error("No room for room ID: " + roomId);
+        }
+        const joinRules = room.currentState.getStateEvents("m.room.join_rules", "");
+        if (!joinRules) {
+            throw new Error("No join_rules for room ID: " + roomId);
+        }
+        const isPublic = joinRules.getContent().join_rule === "public";
+
+        if (isPublic) {
+            // publish the room
+            await client.setRoomDirectoryVisibility(roomId, "public");
+            console.log("p2pEnsurePublished: Now published.");
+        } else {
+            // unpublish the room
+            await client.setRoomDirectoryVisibility(roomId, "private");
+            console.log("p2pEnsurePublished: Now hidden.");
+        }
+    } catch (err) {
+        console.log("p2pEnsurePublished encountered an error: ", err);
+    }
 }
 
 // We use this to work out what URL the SDK should
