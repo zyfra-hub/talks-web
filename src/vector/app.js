@@ -21,6 +21,7 @@ limitations under the License.
 import olmWasmPath from 'olm/olm.wasm';
 
 import React from 'react';
+import PropTypes from 'prop-types';
 // add React and ReactPerf to the global namespace, to make them easier to
 // access via the console
 global.React = React;
@@ -29,6 +30,7 @@ import ReactDOM from 'react-dom';
 import Matrix from 'matrix-js-sdk';
 import * as sdk from 'matrix-react-sdk';
 import PlatformPeg from 'matrix-react-sdk/src/PlatformPeg';
+import Modal from 'matrix-react-sdk/src/Modal';
 import * as VectorConferenceHandler from 'matrix-react-sdk/src/VectorConferenceHandler';
 import * as languageHandler from 'matrix-react-sdk/src/languageHandler';
 import {_t, _td, newTranslatableError} from 'matrix-react-sdk/src/languageHandler';
@@ -128,13 +130,58 @@ function onNewScreen(screen) {
     if (!window.matrixChat) {
         return;
     }
+    let creds = null;
     if (screen === "register" || screen === "login" || screen === "welcome") {
-        autoRegister().then((creds) => {
-            window.matrixChat.onUserCompletedLoginFlow(creds, "-")
+        autoRegister().then((newCreds) => {
+            creds = newCreds;
+            return window.matrixChat.onUserCompletedLoginFlow(newCreds, "-");
         }, (err) => {
             console.error("Failed to auto-register:", err)
+        }).then(() => {
+            // first time user
+            if (creds._registered) {
+                p2pFirstTimeSetup();
+            }
         })
     }
+}
+
+class P2PDisplayNameDialog extends React.Component {
+    static propTypes = {
+        onFinished: PropTypes.func.isRequired,
+    };
+
+    render() {
+        const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
+        const ChangeDisplayName = sdk.getComponent('settings.ChangeDisplayName');
+        const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
+
+        return <BaseDialog
+            onFinished={this.props.onFinished}
+            title={ _t('Set a display name:')}
+        >
+            <ChangeDisplayName onFinished={this.props.onFinished} />
+            <DialogButtons
+                primaryButton={_t('OK')}
+                onPrimaryButtonClick={this.props.onFinished}
+                hasCancel={false}
+            />
+        </BaseDialog>;
+    }
+}
+
+function p2pFirstTimeSetup() {
+    // Prompt them to set a display name
+    Modal.createDialog(P2PDisplayNameDialog,
+        {
+            onFinished: () => {
+                // View the room directory after display name has been sorted out
+                dis.dispatch({
+                    action: 'view_room_directory',
+                });
+            },
+        }, null, /* priority = */ false, /* static = */ true,
+    );
 }
 
 // We use this to work out what URL the SDK should
@@ -184,16 +231,16 @@ function onTokenLoginCompleted() {
     window.location.href = formatted;
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function autoRegister() {
     console.log("dendrite: Auto-registration in progress");
     const cli = Matrix.createClient({
         baseUrl: "https://p2p.riot.im",
     });
     const password = "this should be really really secure";
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 
     // make sure the server is up (active service worker)
     await navigator.serviceWorker.ready;
@@ -204,9 +251,11 @@ async function autoRegister() {
     await sleep(10);
 
     let response = null;
+    let didRegister = false;
     try {
         response = await cli.register("p2p", password, "", { type: "m.login.dummy" });
         console.log("dendrite: Auto-registration done ", response);
+        didRegister = true;
     } catch (err) {
         console.error("dendrite: failed to register, trying to login:", err)
         response = await cli.login("m.login.password", {
@@ -225,6 +274,7 @@ async function autoRegister() {
         homeserverUrl: cli.getHomeserverUrl(),
         accessToken: response.access_token,
         guest: cli.isGuest(),
+        _registered: didRegister,
     };
 }
 
@@ -368,49 +418,6 @@ export async function loadApp() {
         } else {
             loadDendriteSw();
         }
-        
-        /*
-        // check if we are logged in and if not, register.
-        const autoRegister = async () => {
-            console.log("dendrite: Auto-registration in progress");
-            const cli = Matrix.createClient({
-                baseUrl: "https://p2p.riot.im",
-            });
-            const password = Math.random() + "-" + Math.random();
-
-            const response = await cli.register("p2p", password, "", { type: "m.login.dummy" });
-            console.log("dendrite: Auto-registration done ", response);
-            await Lifecycle.setLoggedIn({
-                userId: response.user_id,
-                deviceId: response.device_id,
-                homeserverUrl: cli.getHomeserverUrl(),
-                accessToken: response.access_token,
-                guest: cli.isGuest(),
-            });
-        }
-        const owner = Lifecycle.getStoredSessionOwner();
-        if (!owner) {
-            console.log("dendrite: auto-registering, nothing in local storage");
-            await autoRegister()
-            console.log("dendrite: auto-registered because nothing in local storage");
-        }
-        dis.register((payload) => {
-            if (payload.action !== "on_logged_in") {
-                return;
-            }
-            console.log("dendrite: on_logged_in, attaching logged out listener");
-            MatrixClientPeg.get().on('Session.logged_out', () => {
-                console.log("dendrite: Session.logged_out, re-registering");
-                // let the other listener for this clear the cache.
-                setTimeout(async () => {
-                    await autoRegister();
-                    console.log("dendrite: auto-registered due to logout, go to home");
-                    dis.dispatch({
-                        action: 'view_home_page',
-                    });
-                }, 10)
-            })
-        }); */
     }
 
     const validBrowser = checkBrowserFeatures();

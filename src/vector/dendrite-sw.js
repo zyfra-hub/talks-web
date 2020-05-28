@@ -85,6 +85,7 @@ async function initDendrite() {
             DEBUG: "*",
         }
     };
+    // we do this for prometheus so it doesn't panic on init()
     global.fs.stat = function(path, cb) {
         cb({
             code: "EINVAL",
