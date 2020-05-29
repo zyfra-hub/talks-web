@@ -77,7 +77,7 @@
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
     "sanitize-html": "^1.19.1",
-    "sql.js": "github:Kegsay/sql.js#master",
+    "sql.js": "github:Kegsay/sql.js#d55d2069673d0a62ffe729a8a6c96b1328ae396c",
     "ua-parser-js": "^0.7.19",
     "url": "^0.11.0"
   },
