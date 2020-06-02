@@ -194,16 +194,19 @@ async function p2pEnsurePublished(roomIdOrAlias) {
     // If the room has just been created, we need to wait for the join_rules to come down /sync
     // If the app has just been refreshed, we need to wait for the DB to be loaded.
     // Since we don't really care when this is done, just sleep a bit.
-    await sleep(1000);
+    await sleep(3000);
     console.log("p2pEnsurePublished ", roomIdOrAlias);
     try {
         const client = MatrixClientPeg.get();
         // convert alias to room ID
         let roomId;
+        let aliasLocalpart;
         if (roomIdOrAlias.startsWith("!")) {
             roomId = roomIdOrAlias;
         } else {
             roomId = getCachedRoomIDForAlias(roomIdOrAlias);
+            // extract the localpart so we can republish this alias on our server
+            aliasLocalpart = roomIdOrAlias.split(":")[0].substring(1)
         }
 
         // fetch the join_rules, check if public
@@ -211,6 +214,19 @@ async function p2pEnsurePublished(roomIdOrAlias) {
         if (!room) {
             throw new Error("No room for room ID: " + roomId);
         }
+        if (!aliasLocalpart) {
+            const roomName = room.currentState.getStateEvents("m.room.name", "");
+            if (roomName) {
+                aliasLocalpart = roomName.getContent().name;
+                // room alias grammar is poorly defined. Synapse rejects whitespace, Riot barfs on slashes, it's a mess.
+                // so for now, let's just do A-Za-z0-9_-
+                aliasLocalpart = aliasLocalpart.replace(/[^A-Za-z0-9_-]/g, "")
+            } else {
+                // use the random part of the room ID as a fallback.
+                aliasLocalpart = roomId.split(":")[0].substring(1)
+            }
+        }
+
         const joinRules = room.currentState.getStateEvents("m.room.join_rules", "");
         if (!joinRules) {
             throw new Error("No join_rules for room ID: " + roomId);
@@ -218,6 +234,33 @@ async function p2pEnsurePublished(roomIdOrAlias) {
         const isPublic = joinRules.getContent().join_rule === "public";
 
         if (isPublic) {
+            // make sure that there is an alias mapping
+            try {
+                for(let i = 0; i < 2; i++) {
+                    const newRoomAlias = `#${aliasLocalpart}:${client.getDomain()}`;
+                    let exists = false;
+                    let matches = false;
+                    try {
+                        const aliasResponse = await client.getRoomIdForAlias(newRoomAlias);
+                        matches = aliasResponse.room_id === roomId;
+                        exists = true;
+                    } catch (err) {}
+                    console.log("p2pEnsurePublished: room ID:", roomId, " want alias: ", newRoomAlias, " exists=", exists, " matches=", matches);
+                    if (!exists) {
+                        await client.createAlias(newRoomAlias, roomId);
+                        break;
+                    } else if (!matches) {
+                        // clashing room alias, use the room ID.
+                        aliasLocalpart = roomId.split(":")[0].substring(1);
+                    } else {
+                        // exists and matches, do nothing
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.log("p2pEnsurePublished: problem creating alias: ", err);
+            }
+
             // publish the room
             await client.setRoomDirectoryVisibility(roomId, "public");
             console.log("p2pEnsurePublished: Now published.");
