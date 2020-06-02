@@ -190,6 +190,40 @@ function p2pFirstTimeSetup() {
     );
 }
 
+async function fetchRoom(roomId) {
+    const client = MatrixClientPeg.get();
+    let room = client.getRoom(roomId);
+    if (room) {
+        return room;
+    }
+    console.log("p2pEnsurePublished fetchRoom waiting for room... ", roomId);
+    room = await new Promise((resolve, reject) => {
+        let fulfilled = false;
+        let cb = function(room){
+            if (fulfilled) {
+                return;
+            }
+            let newRoomId = room.roomId;
+            if (roomId === newRoomId) {
+                fulfilled = true;
+                console.log("p2pEnsurePublished fetchRoom found ", roomId);
+                resolve(room);
+            }
+        }
+        client.on("Room", cb);
+        setTimeout(() => {
+            if (fulfilled) {
+                return;
+            }
+            console.log("p2pEnsurePublished fetchRoom timed out ", roomId);
+            fulfilled = true;
+            client.removeListener("Room", cb);
+            reject(new Error("timed out waiting to see room " + roomId));
+        }, 60 * 1000); // wait 60s
+    });
+    return room;
+}
+
 async function p2pEnsurePublished(roomIdOrAlias) {
     // If the room has just been created, we need to wait for the join_rules to come down /sync
     // If the app has just been refreshed, we need to wait for the DB to be loaded.
@@ -210,7 +244,7 @@ async function p2pEnsurePublished(roomIdOrAlias) {
         }
 
         // fetch the join_rules, check if public
-        const room = client.getRoom(roomId);
+        const room = await fetchRoom(roomId);
         if (!room) {
             throw new Error("No room for room ID: " + roomId);
         }
