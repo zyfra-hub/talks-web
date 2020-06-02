@@ -16,7 +16,7 @@
 // Dendrite Service Worker version
 // Bumping the patch version of this has no side-effects.
 // Bumping the minor version of this will delete databases.
-const version = "0.1.0"
+const version = "0.1.1";
 
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
 const id = Math.random();
@@ -56,7 +56,6 @@ function sleep(ms) {
 }
 
 function syncfs(isStartup) {
-    console.log("syncfs isStartup=",isStartup);
     return new Promise((resolve, reject) => {
         global._go_sqlite.FS.syncfs(isStartup, function(err) {
             if (err) {
