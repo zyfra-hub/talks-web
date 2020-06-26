@@ -29,6 +29,7 @@ export default class VectorAuthHeaderLogo extends React.PureComponent {
     }
 
     render() {
+        const brand = SdkConfig.get().brand || "Riot";
         const brandingConfig = SdkConfig.get().branding;
         let logoUrl = "themes/riot/img/logos/riot-im-logo-black-text.svg";
         if (brandingConfig && brandingConfig.authHeaderLogoUrl) {
@@ -37,7 +38,7 @@ export default class VectorAuthHeaderLogo extends React.PureComponent {
 
         return (
             <div className="mx_AuthHeaderLogo">
-                <img src={logoUrl} alt="Riot" />
+                <img src={logoUrl} alt={brand} />
             </div>
         );
     }
