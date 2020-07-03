@@ -16,7 +16,17 @@
 // Dendrite Service Worker version
 // Bumping the patch version of this has no side-effects.
 // Bumping the minor version of this will delete databases.
-const version = "0.1.1";
+const version = "0.2.0";
+
+const isVersionBump = function(oldVer, newVer) {
+    oldVer = oldVer || "";
+    const newSegments = newVer.split(".");
+    const oldSegments = oldVer.split(".");
+    if (oldSegments.length != 3) {
+        return true; // brand new
+    }
+    return newSegments[1] > oldSegments[1];
+}
 
 const bundle_path = self.location.href.replace("/dendrite_sw.js", "")
 const id = Math.random();
@@ -69,13 +79,30 @@ function syncfs(isStartup) {
     });
 }
 
+function deleteDatabase(name) {
+    return new Promise(function(resolve, reject) {
+        const req = indexedDB.deleteDatabase(name);
+        req.onsuccess = function () {
+            console.log("Deleted database successfully: ", name);
+            resolve();
+        };
+        req.onerror = function (event) {
+            console.log("Couldn't delete database: ", name, event);
+            reject(new Error("failed to delete database"));
+        };
+    });
+}
+
 async function initDendrite() {
     console.log(`dendrite-sw.js: v${version} SW init`)
     // check if we need to purge databases (minor version bump)
     const prevVer = await global.localforage.getItem("dendrite_version")
     if (prevVer != version) {
-        const nukeDatabase = false; // TODO
-        console.log(`dendrite-sw.js: previous ver ${prevVer} current ${version} nuke databases: ${nukeDatabase}`)
+        const nukeDatabase = isVersionBump(prevVer, version);
+        console.log(`dendrite-sw.js: previous ver ${prevVer} current ${version} nuke databases: ${nukeDatabase}`);
+        if (nukeDatabase) {
+            await deleteDatabase("/idb");
+        }
     }
 
     global.process = {
