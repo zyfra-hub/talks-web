@@ -46,7 +46,7 @@ import {Action} from "matrix-react-sdk/src/dispatcher/actions";
 import {ActionPayload} from "matrix-react-sdk/src/dispatcher/payloads";
 import {showToast as showUpdateToast} from "matrix-react-sdk/src/toasts/UpdateToast";
 import {CheckUpdatesPayload} from "matrix-react-sdk/src/dispatcher/payloads/CheckUpdatesPayload";
-import ToastStore from "matrix-react-sdk/src/stores/ToastStore";
+import ToastStore, {Priority} from "matrix-react-sdk/src/stores/ToastStore";
 import GenericExpiringToast from "matrix-react-sdk/src/components/views/toasts/GenericExpiringToast";
 
 const ipcRenderer = window.ipcRenderer;
@@ -266,7 +266,7 @@ export default class ElectronPlatform extends VectorBasePlatform {
                     numSeconds: 10,
                 },
                 component: GenericExpiringToast,
-                priority: 99,
+                priority: Priority.DownloadCompleted,
             });
         });
 
