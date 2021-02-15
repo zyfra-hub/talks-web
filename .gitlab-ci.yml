@@ -1,0 +1,50 @@
+docker-build-master:
+  variables:
+    USE_CUSTOM_SDKS: "true"
+    JS_SDK_REF: "master"
+    JS_SDK_REPO: "https://github.com/matrix-org/matrix-js-sdk.git"
+    REACT_SDK_REPO: "https://gitlab-ci-token:$GL_BAYERN_REACT_SDK_TOKEN@gitlab.matrix.org/new-vector/dataport/bayern-react-sdk"
+    REACT_SDK_BRANCH: "master"
+  tags: ['shell']
+  stage: build
+  before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+  - docker build --pull -t "$CI_REGISTRY_IMAGE" --build-arg "USE_CUSTOM_SDKS=$USE_CUSTOM_SDKS" --build-arg "JS_SDK_REF=$JS_SDK_REF" --build-arg "JS_SDK_REPO=$JS_SDK_REPO" --build-arg "REACT_SDK_REPO=$REACT_SDK_REPO" --build-arg "REACT_SDK_BRANCH=$REACT_SDK_BRANCH" .
+  - docker push "$CI_REGISTRY_IMAGE"
+  rules:
+  - if: $CI_COMMIT_BRANCH == "master"
+
+docker-build:
+  variables:
+    USE_CUSTOM_SDKS: "true"
+    JS_SDK_REF: "master"
+    JS_SDK_REPO: "https://github.com/matrix-org/matrix-js-sdk.git"
+    REACT_SDK_REPO: "https://gitlab-ci-token:$GL_BAYERN_REACT_SDK_TOKEN@gitlab.matrix.org/new-vector/dataport/bayern-react-sdk"
+    REACT_SDK_BRANCH: "master"
+  tags: ['shell']
+  stage: build
+  before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+  - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" --build-arg "USE_CUSTOM_SDKS=$USE_CUSTOM_SDKS" --build-arg "JS_SDK_REF=$JS_SDK_REF" --build-arg "JS_SDK_REPO=$JS_SDK_REPO" --build-arg "REACT_SDK_REPO=$REACT_SDK_REPO" --build-arg "REACT_SDK_BRANCH=$REACT_SDK_BRANCH" .
+  - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+  rules:
+  - if: $CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == null
+
+docker-build-tags:
+  variables:
+    USE_CUSTOM_SDKS: "true"
+    JS_SDK_REF: "master"
+    JS_SDK_REPO: "https://github.com/matrix-org/matrix-js-sdk.git"
+    REACT_SDK_REPO: "https://gitlab-ci-token:$GL_BAYERN_REACT_SDK_TOKEN@gitlab.matrix.org/new-vector/dataport/bayern-react-sdk"
+    REACT_SDK_BRANCH: "master"
+  tags: ['shell']
+  stage: build
+  before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+  - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME" --build-arg "USE_CUSTOM_SDKS=$USE_CUSTOM_SDKS" --build-arg "JS_SDK_REF=$JS_SDK_REF" --build-arg "JS_SDK_REPO=$JS_SDK_REPO" --build-arg "REACT_SDK_REPO=$REACT_SDK_REPO" --build-arg "REACT_SDK_BRANCH=$REACT_SDK_BRANCH" .
+  - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+  rules:
+  - if: $CI_COMMIT_TAG
