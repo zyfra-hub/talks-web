@@ -22,7 +22,7 @@ docker-build:
   - "[[ $CI_COMMIT_BRANCH != 'master' ]] && export ELEMENT_WEB_SHA=$(git rev-parse --short=12 HEAD)"
   - "[[ $CI_COMMIT_BRANCH == 'master' ]] && export ELEMENT_WEB_SHA=master"
   - "[[ -v CI_COMMIT_TAG ]] && export SPECIAL_DOCKER_TAG=$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
-  - "[[ $CI_COMMIT_BRANCH == 'master' -a $REACT_SDK_BRANCH == 'master' -a $JS_SDK_REF == 'master' ]] && export SPECIAL_DOCKER_TAG=$CI_REGISTRY_IMAGE:latest"
+  - "([[ $CI_COMMIT_BRANCH == 'master' ]] && [[ $REACT_SDK_BRANCH == 'master' ]] && [[ $JS_SDK_REF == 'master' ]]) && export SPECIAL_DOCKER_TAG=$CI_REGISTRY_IMAGE:latest"
   - '[[ -z $SPECIAL_DOCKER_TAG ]] && export DOCKER_TAG="$CI_REGISTRY_IMAGE:$ELEMENT_WEB_SHA-react-$REACT_SDK_SHA-js-$JS_SDK_SHA" || export DOCKER_TAG="$SPECIAL_DOCKER_TAG"'
   script:
   - echo "Docker tag will be $DOCKER_TAG"
