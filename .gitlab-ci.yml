@@ -33,13 +33,13 @@ docker-build:
   before_script:
   - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   - "[ -d './js-sdk' ] && rm -rf ./js-sdk"
-  - "[$JS_SDK_REF != 'master'] && git clone --depth 1 --branch $JS_SDK_REF $JS_SDK_REPO js-sdk && cd js-sdk && export JS_SDK_SHA=$(git rev-parse --short=12 HEAD) && cd ../ && rm -rf js-sdk"
-  - "[$JS_SDK_REF = 'master'] && export JS_SDK_SHA=master"
+  - "[[$JS_SDK_REF != 'master']] && git clone --depth 1 --branch $JS_SDK_REF $JS_SDK_REPO js-sdk && cd js-sdk && export JS_SDK_SHA=$(git rev-parse --short=12 HEAD) && cd ../ && rm -rf js-sdk"
+  - "[[$JS_SDK_REF == 'master']] && export JS_SDK_SHA=master"
   - "[ -d './react-sdk' ] && rm -rf ./react-sdk"
-  - "[$REACT_SDK_BRANCH != 'master'] && git clone --depth 1 --branch $REACT_SDK_BRANCH $REACT_SDK_REPO react-sdk && cd react-sdk && export REACT_SDK_SHA=$(git rev-parse --short=12 HEAD) && cd ../ && rm -rf react-sdk"
-  - "[$REACT_SDK_BRANCH = 'master'] && export REACT_SDK_SHA=master"
-  - "[$CI_COMMIT_BRANCH != 'master'] && export ELEMENT_WEB_SHA=$(git rev-parse --short=12 HEAD)"
-  - "[$CI_COMMIT_BRANCH = 'master'] && export ELEMENT_WEB_SHA=master"
+  - "[[$REACT_SDK_BRANCH != 'master']] && git clone --depth 1 --branch $REACT_SDK_BRANCH $REACT_SDK_REPO react-sdk && cd react-sdk && export REACT_SDK_SHA=$(git rev-parse --short=12 HEAD) && cd ../ && rm -rf react-sdk"
+  - "[[$REACT_SDK_BRANCH == 'master']] && export REACT_SDK_SHA=master"
+  - "[[$CI_COMMIT_BRANCH != 'master']] && export ELEMENT_WEB_SHA=$(git rev-parse --short=12 HEAD)"
+  - "[[$CI_COMMIT_BRANCH == 'master']] && export ELEMENT_WEB_SHA=master"
   - '[[ -z $SPECIAL_DOCKER_TAG ]] && export DOCKER_TAG="$CI_REGISTRY_IMAGE:$ELEMENT_WEB_SHA-react-$REACT_SDK_SHA-js-$JS_SDK_SHA" || export DOCKER_TAG="$SPECIAL_DOCKER_TAG"'
   script:
   - echo "Docker tag will be $DOCKER_TAG"
