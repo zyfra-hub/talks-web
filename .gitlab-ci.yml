@@ -35,11 +35,11 @@ docker-build:
   - "[ -d './js-sdk' ] && rm -rf ./js-sdk"
   - git clone --depth 1 --branch $JS_SDK_REF $JS_SDK_REPO js-sdk && cd js-sdk
   - "export JS_SDK_SHA=$(git rev-parse --short=12 HEAD)"
-  - cd ../
+  - cd ../ && rm -rf js-sdk
   - "[ -d './react-sdk' ] && rm -rf ./react-sdk"
   - git clone --depth 1 --branch $REACT_SDK_BRANCH $REACT_SDK_REPO react-sdk && cd react-sdk
   - "export REACT_SDK_SHA=$(git rev-parse --short=12 HEAD)"
-  - cd ../
+  - cd ../ && rm -rf react-sdk
   - "export ELEMENT_WEB_SHA=$(git rev-parse --short=12 HEAD)"
   - '[[ -z $SPECIAL_DOCKER_TAG ]] && export DOCKER_TAG="$CI_REGISTRY_IMAGE:$ELEMENT_WEB_SHA-react-$REACT_SDK_SHA-js-$JS_SDK_SHA" || export DOCKER_TAG="$SPECIAL_DOCKER_TAG"'
   script:
