@@ -13,7 +13,8 @@ prepare-master:
   variables:
     SPECIAL_DOCKER_TAG: "$CI_REGISTRY_IMAGE:latest"
   stage: prepare
-  script: []
+  script:
+  - echo "Set SPECIAL_DOCKER_TAG to $SPECIAL_DOCKER_TAG"
   rules:
   - if: $CI_COMMIT_BRANCH == "master" && $REACT_SDK_BRANCH == "master" && $JS_SDK_REF == "master"
 
@@ -21,7 +22,8 @@ prepare-tags:
   variables:
     SPECIAL_DOCKER_TAG: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
   stage: prepare
-  script: []
+  script:
+  - echo "Set SPECIAL_DOCKER_TAG to $SPECIAL_DOCKER_TAG"
   rules:
   - if: $CI_COMMIT_TAG
 
