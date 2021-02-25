@@ -3,7 +3,7 @@ stages:
 
 variables:
   USE_CUSTOM_SDKS: "true"
-  JS_SDK_REF: "master"
+  JS_SDK_REF: "release-v9.8.0"
   JS_SDK_REPO: "https://github.com/matrix-org/matrix-js-sdk.git"
   REACT_SDK_REPO: "https://gitlab-ci-token:$GL_BAYERN_REACT_SDK_TOKEN@gitlab.matrix.org/new-vector/dataport/bayern-react-sdk"
   REACT_SDK_BRANCH: "master"
