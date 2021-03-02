@@ -3,7 +3,7 @@ stages:
 
 variables:
   USE_CUSTOM_SDKS: "true"
-  JS_SDK_REF: "release-v9.8.0"
+  JS_SDK_BRANCH: "release-v9.8.0"
   JS_SDK_REPO: "https://github.com/matrix-org/matrix-js-sdk.git"
   REACT_SDK_REPO: "https://gitlab-ci-token:$GL_BAYERN_REACT_SDK_TOKEN@gitlab.matrix.org/new-vector/dataport/bayern-react-sdk"
   REACT_SDK_BRANCH: "master"
@@ -14,17 +14,17 @@ docker-build:
   before_script:
   - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   - "[ -d './js-sdk' ] && rm -rf ./js-sdk"
-  - "[[ $JS_SDK_REF != 'master' ]] && git clone --depth 1 --branch $JS_SDK_REF $JS_SDK_REPO js-sdk && cd js-sdk && export JS_SDK_SHA=$(git rev-parse --short=12 HEAD) && cd ../ && rm -rf js-sdk"
-  - "[[ $JS_SDK_REF == 'master' ]] && export JS_SDK_SHA=master"
+  - "[[ $JS_SDK_BRANCH != 'master' ]] && git clone --depth 1 --branch $JS_SDK_BRANCH $JS_SDK_REPO js-sdk && cd js-sdk && export JS_SDK_SHA=$(git rev-parse --short=12 HEAD) && cd ../ && rm -rf js-sdk"
+  - "[[ $JS_SDK_BRANCH == 'master' ]] && export JS_SDK_SHA=master"
   - "[ -d './react-sdk' ] && rm -rf ./react-sdk"
   - "[[ $REACT_SDK_BRANCH != 'master' ]] && git clone --depth 1 --branch $REACT_SDK_BRANCH $REACT_SDK_REPO react-sdk && cd react-sdk && export REACT_SDK_SHA=$(git rev-parse --short=12 HEAD) && cd ../ && rm -rf react-sdk"
   - "[[ $REACT_SDK_BRANCH == 'master' ]] && export REACT_SDK_SHA=master"
   - "[[ $CI_COMMIT_BRANCH != 'master' ]] && export ELEMENT_WEB_SHA=$(git rev-parse --short=12 HEAD)"
   - "[[ $CI_COMMIT_BRANCH == 'master' ]] && export ELEMENT_WEB_SHA=master"
   - "[[ -v CI_COMMIT_TAG ]] && export SPECIAL_DOCKER_TAG=$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
-  - "([[ $CI_COMMIT_BRANCH == 'master' ]] && [[ $REACT_SDK_BRANCH == 'master' ]] && [[ $JS_SDK_REF == 'master' ]]) && export SPECIAL_DOCKER_TAG=$CI_REGISTRY_IMAGE:latest"
+  - "([[ $CI_COMMIT_BRANCH == 'master' ]] && [[ $REACT_SDK_BRANCH == 'master' ]] && [[ $JS_SDK_BRANCH == 'master' ]]) && export SPECIAL_DOCKER_TAG=$CI_REGISTRY_IMAGE:latest"
   - '[[ -z $SPECIAL_DOCKER_TAG ]] && export DOCKER_TAG="$CI_REGISTRY_IMAGE:$ELEMENT_WEB_SHA-react-$REACT_SDK_SHA-js-$JS_SDK_SHA" || export DOCKER_TAG="$SPECIAL_DOCKER_TAG"'
   script:
   - echo "Docker tag will be $DOCKER_TAG"
-  - docker build --pull -t "$DOCKER_TAG" --build-arg "USE_CUSTOM_SDKS=$USE_CUSTOM_SDKS" --build-arg "JS_SDK_BRANCH=$JS_SDK_REF" --build-arg "JS_SDK_REPO=$JS_SDK_REPO" --build-arg "REACT_SDK_REPO=$REACT_SDK_REPO" --build-arg "REACT_SDK_BRANCH=$REACT_SDK_BRANCH" .
+  - docker build --pull -t "$DOCKER_TAG" --build-arg "USE_CUSTOM_SDKS=$USE_CUSTOM_SDKS" --build-arg "JS_SDK_BRANCH=$JS_SDK_BRANCH" --build-arg "JS_SDK_REPO=$JS_SDK_REPO" --build-arg "REACT_SDK_REPO=$REACT_SDK_REPO" --build-arg "REACT_SDK_BRANCH=$REACT_SDK_BRANCH" .
   - docker push "$DOCKER_TAG"
