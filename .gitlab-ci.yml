@@ -26,5 +26,5 @@ docker-build:
   - '[[ -z $SPECIAL_DOCKER_TAG ]] && export DOCKER_TAG="$CI_REGISTRY_IMAGE:$ELEMENT_WEB_SHA-react-$REACT_SDK_SHA-js-$JS_SDK_SHA" || export DOCKER_TAG="$SPECIAL_DOCKER_TAG"'
   script:
   - echo "Docker tag will be $DOCKER_TAG"
-  - docker build --no-cache --pull -t "$DOCKER_TAG" --build-arg "USE_CUSTOM_SDKS=$USE_CUSTOM_SDKS" --build-arg "JS_SDK_BRANCH=$JS_SDK_REF" --build-arg "JS_SDK_REPO=$JS_SDK_REPO" --build-arg "REACT_SDK_REPO=$REACT_SDK_REPO" --build-arg "REACT_SDK_BRANCH=$REACT_SDK_BRANCH" .
+  - docker build --pull -t "$DOCKER_TAG" --build-arg "USE_CUSTOM_SDKS=$USE_CUSTOM_SDKS" --build-arg "JS_SDK_BRANCH=$JS_SDK_REF" --build-arg "JS_SDK_REPO=$JS_SDK_REPO" --build-arg "REACT_SDK_REPO=$REACT_SDK_REPO" --build-arg "REACT_SDK_BRANCH=$REACT_SDK_BRANCH" .
   - docker push "$DOCKER_TAG"
