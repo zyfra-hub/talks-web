@@ -3175,15 +3175,15 @@
     "Allow students to send messages": "Schüler*innen das Chatten erlauben",
     "Hide %(widgetName)s": "Verberge %(widgetName)s",
     "Show %(widgetName)s": "Zeige %(widgetName)s",
-    "Enter your name to join the classroom": "Gib deinen Namen ein um den Raum zu betreten",
+    "Enter your name to join the classroom": "Geben Sie Ihren Namen ein",
     "First name": "Vorname",
     "Surname": "Nachname",
     "Start learning!": "Starten!",
-    "Teacher": "Lehrer*in",
-    "Teaching Assistant": "Vertretungslehrer*in",
-    "Student": "Schüler*in",
+    "Teacher": "Moderator*in",
+    "Teaching Assistant": "Assistent*in",
+    "Student": "Teilnehmer*in",
     "No known servers": "Server nicht gefunden",
-    "null was not legal room ID or room alias": "Der Unterricht wurde bereits beendet",
-    "Join the room to start learning": "Tritt dem Raum bei und beginne das Lernen"
+    "null was not legal room ID or room alias": "Die Session wurde bereits beendet",
+    "Join the room to start learning": "Tritt dem Raum bei"
 
 }
