@@ -3184,6 +3184,6 @@
     "Student": "Teilnehmer*in",
     "No known servers": "Server nicht gefunden",
     "null was not legal room ID or room alias": "Die Session wurde bereits beendet",
-    "Join the room to start learning": "Tritt dem Raum bei"
-
+    "Join the room to start learning": "Tritt dem Raum bei",
+    "Chat disabled. Your teacher has disabled the chat": "Der Chat ist derzeit deaktiviert"
 }
