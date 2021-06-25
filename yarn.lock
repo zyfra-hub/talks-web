@@ -11207,9 +11207,9 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-"sql.js@github:Kegsay/sql.js#d55d2069673d0a62ffe729a8a6c96b1328ae396c":
-  version "1.2.2"
-  resolved "https://codeload.github.com/Kegsay/sql.js/tar.gz/d55d2069673d0a62ffe729a8a6c96b1328ae396c"
+"sql.js@github:neilalexander/sql.js#b9b375ed34e2ad5eef04f528cfb45d7277c142b9":
+  version "1.5.0"
+  resolved "https://codeload.github.com/neilalexander/sql.js/tar.gz/b9b375ed34e2ad5eef04f528cfb45d7277c142b9"
 
 srcset@^2.0.1:
   version "2.0.1"
