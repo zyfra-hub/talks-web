@@ -37,7 +37,6 @@ module.exports = (env, argv) => {
             "mobileguide": "./src/vector/mobile_guide/index.js",
             "sqlitejs": "./src/vector/sqlitejs.js",
             "localforage": "./node_modules/localforage/dist/localforage.min.js",
-            "go_http_bridge": "./node_modules/go-http-js-libp2p/js/bridge.js",
             "sql_wasm": "./node_modules/sql.js/dist/sql-wasm.wasm",
             "dendrite_wasm": "./src/vector/dendrite.wasm",
             "wasm_exec": "./src/vector/wasm_exec.js",

@@ -44,7 +44,6 @@ self.registration.addEventListener('updatefound', () => {
 })
 
 self.importScripts(`${bundle_path}/wasm_exec.js`,
-                   `${bundle_path}/go_http_bridge.js`,
                    `${bundle_path}/sqlitejs.js`,
                    `${bundle_path}/localforage.js`);
 
@@ -145,10 +144,6 @@ async function initDendrite() {
         console.log(`dendrite-sw.js: v${version} dendrite.wasm terminated, restarting...`);
         // purge databases and p2p nodes.
         global._go_js_server = undefined;
-        global._go_libp2p_nodes.forEach((n) => {
-            n.stop();
-        });
-        global._go_libp2p_nodes = [];
         global._go_sqlite_dbs.clear();
         initDendritePromise = initDendrite();
     });
@@ -173,6 +168,7 @@ async function initDendrite() {
     // persist the new version
     await global.localforage.setItem("dendrite_version", version);
 }
+
 let initDendritePromise = initDendrite();
 
 self.addEventListener('install', function(event) {
