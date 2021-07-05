@@ -362,7 +362,7 @@ function sleep(ms) {
 async function autoRegister() {
     console.log("dendrite: Auto-registration in progress");
     const cli = Matrix.createClient({
-        baseUrl: "https://p2p.riot.im",
+        baseUrl: window.location.origin,
     });
     const password = "this should be really really secure";
 
