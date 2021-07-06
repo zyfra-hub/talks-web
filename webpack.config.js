@@ -1,21 +1,39 @@
+/* eslint-disable quote-props */
+
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-const webpack = require("webpack");
+const HtmlWebpackInjectPreload = require('@principalstudio/html-webpack-inject-preload');
 
-let og_image_url = process.env.RIOT_OG_IMAGE_URL;
-if (!og_image_url) og_image_url = 'https://riot.im/app/themes/riot/img/logos/riot-im-logo-black-text.png';
+let ogImageUrl = process.env.RIOT_OG_IMAGE_URL;
+if (!ogImageUrl) ogImageUrl = 'https://app.element.io/themes/element/img/logos/opengraph.png';
+
+const additionalPlugins = [
+    // This is where you can put your customisation replacements.
+];
 
 module.exports = (env, argv) => {
+    let nodeEnv = argv.mode;
     if (process.env.CI_PACKAGE) {
         // Don't run minification for CI builds (this is only set for runs on develop)
+        // We override this via environment variable to avoid duplicating the scripts
+        // in `package.json` just for a different mode.
         argv.mode = "development";
+
+        // More and more people are using nightly build as their main client
+        // Libraries like React have a development build that is useful
+        // when working on the app but adds significant runtime overhead
+        // We want to use the React production build but not compile the whole
+        // application to productions standards
+        nodeEnv = "production";
     }
 
     const development = {};
-    if (argv.mode !== "production") {
+    if (argv.mode === "production") {
+        development['devtool'] = 'nosources-source-map';
+    } else {
         // This makes the sourcemaps human readable for developers. We use eval-source-map
         // because the plain source-map devtool ruins the alignment.
         development['devtool'] = 'eval-source-map';
@@ -30,19 +48,31 @@ module.exports = (env, argv) => {
     return {
         ...development,
 
+        node: {
+            // Mock out the NodeFS module: The opus decoder imports this wrongly.
+            // Also needed by sql.js in P2P mode.
+            fs: 'empty',
+        },
+
         entry: {
-            "bundle": "./src/vector/index.js",
-            "indexeddb_worker": "./src/vector/indexeddb-worker.js",
-            "dendrite_sw": "./src/vector/dendrite-sw.js",
+            "bundle": "./src/vector/index.ts",
+            "indexeddb-worker": "./src/vector/indexeddb-worker.js",
             "mobileguide": "./src/vector/mobile_guide/index.js",
+            "jitsi": "./src/vector/jitsi/index.ts",
+            "usercontent": "./node_modules/matrix-react-sdk/src/usercontent/index.js",
+            "recorder-worklet": "./node_modules/matrix-react-sdk/src/voice/RecorderWorklet.ts",
+
+            // P2P
+            "dendrite_sw": "./src/vector/dendrite-sw.js",
             "sqlitejs": "./src/vector/sqlitejs.js",
             "localforage": "./node_modules/localforage/dist/localforage.min.js",
             "sql_wasm": "./node_modules/sql.js/dist/sql-wasm.wasm",
             "dendrite_wasm": "./src/vector/dendrite.wasm",
             "wasm_exec": "./src/vector/wasm_exec.js",
-            "usercontent": "./node_modules/matrix-react-sdk/src/usercontent/index.js",
 
             // CSS themes
+            "theme-legacy": "./node_modules/matrix-react-sdk/res/themes/legacy-light/css/legacy-light.scss",
+            "theme-legacy-dark": "./node_modules/matrix-react-sdk/res/themes/legacy-dark/css/legacy-dark.scss",
             "theme-light": "./node_modules/matrix-react-sdk/res/themes/light/css/light.scss",
             "theme-dark": "./node_modules/matrix-react-sdk/res/themes/dark/css/dark.scss",
             "theme-light-custom": "./node_modules/matrix-react-sdk/res/themes/light-custom/css/light-custom.scss",
@@ -61,6 +91,9 @@ module.exports = (env, argv) => {
                         enforce: true,
                         // Do not add `chunks: 'all'` here because you'll break the app entry point.
                     },
+                    default: {
+                        reuseExistingChunk: true,
+                    },
                 },
             },
 
@@ -72,6 +105,10 @@ module.exports = (env, argv) => {
             // we use a CSS optimizer too and need to manage it ourselves.
             minimize: argv.mode === 'production',
             minimizer: argv.mode === 'production' ? [new TerserPlugin({}), new OptimizeCSSAssetsPlugin({})] : [],
+
+            // Set the value of `process.env.NODE_ENV` for libraries like React
+            // See also https://v4.webpack.js.org/configuration/optimization/#optimizationnodeenv
+            nodeEnv,
         },
 
         resolve: {
@@ -88,7 +125,7 @@ module.exports = (env, argv) => {
             aliasFields: ['matrix_src_browser', 'browser'],
 
             // We need to specify that TS can be resolved without an extension
-            extensions: ['.js', '.json', '.ts'],
+            extensions: ['.js', '.json', '.ts', '.tsx'],
             alias: {
                 // alias any requires to the react module to the one in our path,
                 // otherwise we tend to get the react source included twice when
@@ -98,6 +135,9 @@ module.exports = (env, argv) => {
 
                 // same goes for js-sdk - we don't need two copies.
                 "matrix-js-sdk": path.resolve(__dirname, 'node_modules/matrix-js-sdk'),
+                // and prop-types and sanitize-html
+                "prop-types": path.resolve(__dirname, 'node_modules/prop-types'),
+                "sanitize-html": path.resolve(__dirname, 'node_modules/sanitize-html'),
 
                 // Define a variable so the i18n stuff can load
                 "$webapp": path.resolve(__dirname, 'webapp'),
@@ -113,11 +153,11 @@ module.exports = (env, argv) => {
                 // overflows (https://github.com/webpack/webpack/issues/1721), and
                 // there is no need for webpack to parse them - they can just be
                 // included as-is.
-                /highlight\.js[\\\/]lib[\\\/]languages/,
+                /highlight\.js[\\/]lib[\\/]languages/,
 
                 // olm takes ages for webpack to process, and it's already heavily
                 // optimised, so there is little to gain by us uglifying it.
-                /olm[\\\/](javascript[\\\/])?olm\.js$/,
+                /olm[\\/](javascript[\\/])?olm\.js$/,
             ],
             rules: [
                 {
@@ -141,8 +181,8 @@ module.exports = (env, argv) => {
                     },
                     loader: 'babel-loader',
                     options: {
-                        cacheDirectory: true
-                    }
+                        cacheDirectory: true,
+                    },
                 },
                 {
                     test: /\.css$/,
@@ -153,7 +193,7 @@ module.exports = (env, argv) => {
                             options: {
                                 importLoaders: 1,
                                 sourceMap: true,
-                            }
+                            },
                         },
                         {
                             loader: 'postcss-loader',
@@ -181,6 +221,7 @@ module.exports = (env, argv) => {
 
                                     require("postcss-simple-vars")(),
                                     require("postcss-strip-inline-comments")(),
+                                    require("postcss-hexrgba")(),
 
                                     // It's important that this plugin is last otherwise we end
                                     // up with broken CSS.
@@ -190,7 +231,7 @@ module.exports = (env, argv) => {
                                 "local-plugins": true,
                             },
                         },
-                    ]
+                    ],
                 },
                 {
                     test: /\.scss$/,
@@ -201,7 +242,7 @@ module.exports = (env, argv) => {
                             options: {
                                 importLoaders: 1,
                                 sourceMap: true,
-                            }
+                            },
                         },
                         {
                             loader: 'postcss-loader',
@@ -212,12 +253,14 @@ module.exports = (env, argv) => {
                                     // Note that we use slightly different plugins for SCSS.
 
                                     require('postcss-import')(),
+                                    require("postcss-mixins")(),
                                     require("postcss-simple-vars")(),
                                     require("postcss-extend")(),
                                     require("postcss-nested")(),
-                                    require("postcss-mixins")(),
                                     require("postcss-easings")(),
                                     require("postcss-strip-inline-comments")(),
+                                    require("postcss-hexrgba")(),
+                                    require("postcss-calc")(),
 
                                     // It's important that this plugin is last otherwise we end
                                     // up with broken CSS.
@@ -227,7 +270,7 @@ module.exports = (env, argv) => {
                                 "local-plugins": true,
                             },
                         },
-                    ]
+                    ],
                 },
                 {
                     test: /\.wasm$/,
@@ -241,8 +284,57 @@ module.exports = (env, argv) => {
                     },
                 },
                 {
+                    // Fix up the name of the opus-recorder worker (react-sdk dependency).
+                    // We more or less just want it to be clear it's for opus and not something else.
+                    test: /encoderWorker\.min\.js$/,
+                    loader: "file-loader",
+                    type: "javascript/auto", // https://github.com/webpack/webpack/issues/6725
+                    options: {
+                        // We deliberately override the name so it makes sense in debugging
+                        name: 'opus-encoderWorker.min.[hash:7].[ext]',
+                        outputPath: '.',
+                    },
+                },
+                {
+                    // This is from the same place as the encoderWorker above, but only needed
+                    // for Safari support.
+                    test: /decoderWorker\.min\.js$/,
+                    loader: "file-loader",
+                    type: "javascript/auto", // https://github.com/webpack/webpack/issues/6725
+                    options: {
+                        // We deliberately override the name so it makes sense in debugging
+                        name: 'opus-decoderWorker.min.[hash:7].[ext]',
+                        outputPath: '.',
+                    },
+                },
+                {
+                    // This is from the same place as the encoderWorker above, but only needed
+                    // for Safari support.
+                    test: /decoderWorker\.min\.wasm$/,
+                    loader: "file-loader",
+                    type: "javascript/auto", // https://github.com/webpack/webpack/issues/6725
+                    options: {
+                        // We deliberately don't change the name because the decoderWorker has this
+                        // hardcoded. This is here to avoid the default wasm rule from adding a hash.
+                        name: 'decoderWorker.min.wasm',
+                        outputPath: '.',
+                    },
+                },
+                {
+                    // This is from the same place as the encoderWorker above, but only needed
+                    // for Safari support.
+                    test: /waveWorker\.min\.js$/,
+                    loader: "file-loader",
+                    type: "javascript/auto", // https://github.com/webpack/webpack/issues/6725
+                    options: {
+                        // We deliberately override the name so it makes sense in debugging
+                        name: 'wave-encoderWorker.min.[hash:7].[ext]',
+                        outputPath: '.',
+                    },
+                },
+                {
                     // cache-bust languages.json file placed in
-                    // riot-web/webapp/i18n during build by copy-res.js
+                    // element-web/webapp/i18n during build by copy-res.js
                     test: /\.*languages.json$/,
                     type: "javascript/auto",
                     loader: 'file-loader',
@@ -262,12 +354,12 @@ module.exports = (env, argv) => {
                             options: {
                                 esModule: false,
                                 name: '[name].[hash:7].[ext]',
-                                outputPath: getImgOutputPath,
+                                outputPath: getAssetOutputPath,
                                 publicPath: function(url, resourcePath) {
                                     // CSS image usages end up in the `bundles/[hash]` output
                                     // directory, so we adjust the final path to navigate up
                                     // twice.
-                                    const outputPath = getImgOutputPath(url, resourcePath);
+                                    const outputPath = getAssetOutputPath(url, resourcePath);
                                     return toPublicPath(path.join("../..", outputPath));
                                 },
                             },
@@ -278,29 +370,19 @@ module.exports = (env, argv) => {
                             options: {
                                 esModule: false,
                                 name: '[name].[hash:7].[ext]',
-                                outputPath: getImgOutputPath,
+                                outputPath: getAssetOutputPath,
                                 publicPath: function(url, resourcePath) {
-                                    const outputPath = getImgOutputPath(url, resourcePath);
+                                    const outputPath = getAssetOutputPath(url, resourcePath);
                                     return toPublicPath(outputPath);
                                 },
                             },
                         },
                     ],
                 },
-            ]
-        },
-
-        node: {
-            fs: 'empty' // needed for sql.js
+            ],
         },
 
         plugins: [
-            new webpack.DefinePlugin({
-                'process.env': {
-                    NODE_ENV: JSON.stringify(process.env.NODE_ENV),
-                },
-            }),
-
             // This exports our CSS using the splitChunks and loaders above.
             new MiniCssExtractPlugin({
                 filename: 'bundles/[hash]/[name].css',
@@ -315,28 +397,56 @@ module.exports = (env, argv) => {
                 // HtmlWebpackPlugin will screw up our formatting like the names
                 // of the themes and which chunks we actually care about.
                 inject: false,
-                excludeChunks: ['mobileguide', 'usercontent'],
-                minify: argv.mode === 'production',
-                vars: {
-                    og_image_url: og_image_url,
+                excludeChunks: ['mobileguide', 'usercontent', 'jitsi'],
+                minify: false,
+                templateParameters: {
+                    og_image_url: ogImageUrl,
                 },
+            }),
+
+            // This is the jitsi widget wrapper (embedded, so isolated stack)
+            new HtmlWebpackPlugin({
+                template: './src/vector/jitsi/index.html',
+                filename: 'jitsi.html',
+                minify: false,
+                chunks: ['jitsi'],
             }),
 
             // This is the mobile guide's entry point (separate for faster mobile loading)
             new HtmlWebpackPlugin({
                 template: './src/vector/mobile_guide/index.html',
                 filename: 'mobile_guide/index.html',
-                minify: argv.mode === 'production',
+                minify: false,
                 chunks: ['mobileguide'],
+            }),
+
+            // These are the static error pages for when the javascript env is *really unsupported*
+            new HtmlWebpackPlugin({
+                template: './src/vector/static/unable-to-load.html',
+                filename: 'static/unable-to-load.html',
+                minify: false,
+                chunks: [],
+            }),
+            new HtmlWebpackPlugin({
+                template: './src/vector/static/incompatible-browser.html',
+                filename: 'static/incompatible-browser.html',
+                minify: false,
+                chunks: [],
             }),
 
             // This is the usercontent sandbox's entry point (separate for iframing)
             new HtmlWebpackPlugin({
                 template: './node_modules/matrix-react-sdk/src/usercontent/index.html',
                 filename: 'usercontent/index.html',
-                minify: argv.mode === 'production',
+                minify: false,
                 chunks: ['usercontent'],
             }),
+
+            new HtmlWebpackInjectPreload({
+                files: [{ match: /.*Inter.*\.woff2$/ }],
+            }),
+
+            ...additionalPlugins,
         ],
 
         output: {
@@ -360,12 +470,12 @@ module.exports = (env, argv) => {
             // serve unwebpacked assets from webapp.
             contentBase: './webapp',
 
-            stats: {
-                // don't fill the console up with a mahoosive list of modules
-                chunks: false,
-            },
+            // Only output errors, warnings, or new compilations.
+            // This hides the massive list of modules.
+            stats: 'minimal',
+
             headers: {
-                "Service-Worker-Allowed": "/"
+                "Service-Worker-Allowed": "/",
             },
 
             // hot module replacement doesn't work (I think we'd need react-hot-reload?)
@@ -380,15 +490,25 @@ module.exports = (env, argv) => {
 
 /**
  * Merge assets found via CSS and imports into a single tree, while also preserving
- * directories under `res`.
+ * directories under e.g. `res` or similar.
  *
  * @param {string} url The adjusted name of the file, such as `warning.1234567.svg`.
  * @param {string} resourcePath The absolute path to the source file with unmodified name.
  * @return {string} The returned paths will look like `img/warning.1234567.svg`.
  */
-function getImgOutputPath(url, resourcePath) {
-    const prefix = /^.*[/\\]res[/\\]/;
-    const outputDir = path.dirname(resourcePath).replace(prefix, "");
+function getAssetOutputPath(url, resourcePath) {
+    // `res` is the parent dir for our own assets in various layers
+    // `dist` is the parent dir for KaTeX assets
+    const prefix = /^.*[/\\](dist|res)[/\\]/;
+    if (!resourcePath.match(prefix)) {
+        throw new Error(`Unexpected asset path: ${resourcePath}`);
+    }
+    let outputDir = path.dirname(resourcePath).replace(prefix, "");
+    if (resourcePath.includes("KaTeX")) {
+        // Add a clearly named directory segment, rather than leaving the KaTeX
+        // assets loose in each asset type directory.
+        outputDir = path.join(outputDir, "KaTeX");
+    }
     return path.join(outputDir, path.basename(url));
 }
 
@@ -397,6 +517,7 @@ function getImgOutputPath(url, resourcePath) {
  * be placed directly into things like CSS files.
  *
  * @param {string} path Some path to a file.
+ * @returns {string} converted path
  */
 function toPublicPath(path) {
     return path.replace(/\\/g, '/');
