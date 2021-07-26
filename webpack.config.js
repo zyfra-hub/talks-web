@@ -39,6 +39,13 @@ function getActiveThemes() {
     return themes;
 }
 
+const additionalPlugins = [
+    new webpack.NormalModuleReplacementPlugin(
+        /src[\/\\]customisations[\/\\]WidgetVariables\.ts/,
+        path.resolve(require.resolve("matrix-react-sdk/package.json"), '..', 'src', 'customisations', 'bayern', 'BayernWidgetVariableCustomisations.ts'),
+    ),
+];
+
 module.exports = (env, argv) => {
     // Establish settings based on the environment and args.
     //
@@ -546,6 +553,7 @@ module.exports = (env, argv) => {
                     include: "./webapp/bundles",
                 }),
             new webpack.EnvironmentPlugin(['VERSION']),
+            ...additionalPlugins,
         ].filter(Boolean),
 
         output: {
