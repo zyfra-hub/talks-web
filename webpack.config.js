@@ -44,6 +44,10 @@ const additionalPlugins = [
         /src[\/\\]customisations[\/\\]WidgetVariables\.ts/,
         path.resolve(require.resolve("matrix-react-sdk/package.json"), '..', 'src', 'customisations', 'bayern', 'BayernWidgetVariableCustomisations.ts'),
     ),
+    new webpack.NormalModuleReplacementPlugin(
+        /src[\/\\]customisations[\/\\]ComponentVisibility\.ts/,
+        path.resolve(require.resolve("matrix-react-sdk/package.json"), '..', 'src', 'customisations', 'bayern', 'BayernComponentVisibilityCustomisations.ts'),
+    ),
 ];
 
 module.exports = (env, argv) => {
