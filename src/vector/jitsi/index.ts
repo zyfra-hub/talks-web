@@ -47,6 +47,7 @@ let roomId: string;
 let openIdToken: IOpenIDCredentials;
 let roomName: string;
 let startAudioOnly: boolean;
+let launchJitsiImmediately: boolean;
 
 let widgetApi: WidgetApi;
 let meetApi: any; // JitsiMeetExternalAPI
@@ -57,6 +58,7 @@ let meetApi: any; // JitsiMeetExternalAPI
         const widgetQuery = new URLSearchParams(window.location.hash.substring(1));
         // The widget spec on the other hand requires the widgetId and parentUrl to show up in the regular query string.
         const realQuery = new URLSearchParams(window.location.search.substring(1));
+
         const qsParam = (name: string, optional = false): string => {
             const vals = widgetQuery.has(name) ? widgetQuery.getAll(name) : realQuery.getAll(name);
             if (!optional && vals.length !== 1) {
@@ -109,6 +111,11 @@ let meetApi: any; // JitsiMeetExternalAPI
         roomId = qsParam('roomId', true);
         roomName = qsParam('roomName', true);
         startAudioOnly = qsParam('isAudioOnly', true) === "true";
+        launchJitsiImmediately = qsParam('launchImmediately', true) === "true";
+
+        if (launchJitsiImmediately) {
+            toggleConferenceVisibility(true);
+        }
 
         if (widgetApi) {
             await readyPromise;
@@ -147,6 +154,10 @@ let meetApi: any; // JitsiMeetExternalAPI
             );
         }
 
+        if (launchJitsiImmediately) {
+            joinConference();
+        }
+
         enableJoinButton(); // always enable the button
     } catch (e) {
         logger.error("Error setting up Jitsi widget", e);
@@ -160,8 +171,13 @@ function enableJoinButton() {
 
 function switchVisibleContainers() {
     inConference = !inConference;
-    document.getElementById("jitsiContainer").style.visibility = inConference ? 'unset' : 'hidden';
-    document.getElementById("joinButtonContainer").style.visibility = inConference ? 'hidden' : 'unset';
+    if (!launchJitsiImmediately) {
+        toggleConferenceVisibility(inConference);
+    }
+}
+function toggleConferenceVisibility(isConferenceVisible) {
+    document.getElementById("jitsiContainer").style.visibility = isConferenceVisible ? 'unset' : 'hidden';
+    document.getElementById("joinButtonContainer").style.visibility = isConferenceVisible ? 'hidden' : 'unset';
 }
 
 /**
@@ -263,5 +279,10 @@ function joinConference() { // event handler bound in HTML
 
         document.getElementById("jitsiContainer").innerHTML = "";
         meetApi = null;
+
+        // return to jitsi splash if immediate join enabled
+        if (launchJitsiImmediately) {
+            joinConference();
+        }
     });
 }
